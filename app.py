@@ -21,7 +21,7 @@ CORS(app)
 
 EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]+", re.UNICODE)
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "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")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 ASSISTANT_NAME = "Sezim AI"
