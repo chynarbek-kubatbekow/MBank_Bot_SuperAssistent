@@ -1489,4 +1489,8 @@ if __name__ == "__main__":
     print(f"  Открой: http://localhost:{port}")
     print(f"  SQLite: {DATABASE_PATH}")
     print("=" * 60)
+<<<<<<< HEAD
     app.run(debug=debug_enabled, port=port)
+=======
+    app.run(host="0.0.0.0", port=5000, debug=True)
+>>>>>>> 2935c8f01a17472c7840f314e71e813d2b4e42fc
