@@ -1185,17 +1185,29 @@ async function fetchJSON(url, opts={}) {
 async function loadAIStatus() {
   try {
     const status = await fetchJSON('/api/ai-status');
-    const text = 'Онлайн · Безопасный режим';
+    const text = status.enabled ? 'Онлайн · Groq' : 'Fallback · добавь GROQ_API_KEY в Render';
     const panelStatus = $('panel-status');
     const chatStatus = $('chat-status');
     if (panelStatus) {
       panelStatus.textContent = text;
-      panelStatus.style.color = 'var(--green)';
+      panelStatus.style.color = status.enabled ? 'var(--green)' : '#ffcc66';
     }
     if (chatStatus) {
       chatStatus.textContent = text;
     }
   } catch (e) {}
+}
+
+function markAiFallbackFromResponse(data) {
+  if (!data || !data.local) return;
+  const text = `Fallback · ${data.fallback_reason || 'local_mode'}`;
+  const panelStatus = $('panel-status');
+  const chatStatus = $('chat-status');
+  if (panelStatus) {
+    panelStatus.textContent = text;
+    panelStatus.style.color = '#ffcc66';
+  }
+  if (chatStatus) chatStatus.textContent = text;
 }
 
 function refreshFinancialViews() {
@@ -2155,6 +2167,7 @@ async function callAI() {
       body: JSON.stringify({message: aiHistory[aiHistory.length-1].content, history: aiHistory.slice(0,-1)})
     });
     showAiTyping(false);
+    markAiFallbackFromResponse(data);
     aiHistory.push({role:'assistant', content: data.reply || JSON.stringify(data.action)});
     if (data.reply) addAiMsg(data.reply);
     if (data.action) handleAIAction(data.action);
@@ -2272,6 +2285,7 @@ function chatAskQ(txt) {
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({message: txt, history: chatHistory.slice(0,-1)})
   }).then(data => {
+    markAiFallbackFromResponse(data);
     chatHistory.push({role:'assistant', content: data.reply||''});
     if (data.reply) appendChatMsg('ai', data.reply);
     if (data.action) handleChatAction(data.action);

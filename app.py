@@ -1278,6 +1278,8 @@ def api_ai_status():
             "enabled": online,
             "mode": "online" if online else "local",
             "model": ASSISTANT_NAME,
+            "provider_model": GROQ_MODEL,
+            "fallback_reason": None if online else "missing_groq_api_key",
             "message": f"{ASSISTANT_NAME} онлайн" if online else f"{ASSISTANT_NAME} работает в локальном режиме",
         }
     )
@@ -1286,6 +1288,24 @@ def api_ai_status():
 @app.route("/api/safe-to-spend")
 def api_safe_to_spend():
     return jsonify(compute_safe_to_spend())
+
+
+def chat_fallback_payload(user_message: str, reason: str, provider_status: int | None = None):
+    reply, action = fallback_chat_response(user_message)
+    DB["chat_history"].append({"role": "assistant", "content": reply or str(action)})
+    _award_points(10, "Р”РёР°Р»РѕРі")
+    refresh_scores()
+    payload = {
+        "ok": True,
+        "reply": reply,
+        "action": action,
+        "local": True,
+        "mode": "local",
+        "fallback_reason": reason,
+    }
+    if provider_status is not None:
+        payload["provider_status"] = provider_status
+    return jsonify(payload)
 
 
 @app.route("/api/autopilot-status")
@@ -1443,7 +1463,7 @@ def api_chat():
         DB["chat_history"].append({"role": "assistant", "content": reply or str(action)})
         _award_points(10, "Диалог")
         refresh_scores()
-        return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
+        return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "missing_groq_api_key"})
     messages = [
         {"role": "system", "content": build_system_prompt()},
         {"role": "system", "content": AI_CAPABILITIES_PROMPT},
@@ -1456,13 +1476,13 @@ def api_chat():
         response = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}, json={"model": GROQ_MODEL, "messages": messages, "max_tokens": 600, "temperature": 0.7}, timeout=20)
         if response.status_code == 401:
             reply, action = fallback_chat_response(user_message)
-            return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
+            return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_auth_failed", "provider_status": response.status_code})
         if response.status_code == 400:
             reply, action = fallback_chat_response(user_message)
-            return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
+            return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_bad_request", "provider_status": response.status_code})
         if response.status_code == 429:
             reply, action = fallback_chat_response(user_message)
-            return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
+            return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_rate_limited", "provider_status": response.status_code})
         response.raise_for_status()
         result = response.json()
         reply = result["choices"][0]["message"]["content"].strip()
@@ -1476,7 +1496,7 @@ def api_chat():
         DB["chat_history"].append({"role": "assistant", "content": reply or str(action)})
         _award_points(10, "Диалог")
         refresh_scores()
-        return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
+        return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_network_error"})
     except Exception as error:
         return jsonify({"ok": False, "error": f"Ошибка: {error}"}), 500
 
