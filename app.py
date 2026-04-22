@@ -30,7 +30,7 @@ def load_local_env() -> None:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        os.environ[key.strip().lstrip("\ufeff")] = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key.strip().lstrip("\ufeff"), value.strip().strip('"').strip("'"))
 
 
 load_local_env()
@@ -1489,8 +1489,4 @@ if __name__ == "__main__":
     print(f"  Открой: http://localhost:{port}")
     print(f"  SQLite: {DATABASE_PATH}")
     print("=" * 60)
-<<<<<<< HEAD
-    app.run(debug=debug_enabled, port=port)
-=======
-    app.run(host="0.0.0.0", port=5000, debug=True)
->>>>>>> 2935c8f01a17472c7840f314e71e813d2b4e42fc
+    app.run(host="0.0.0.0", port=port, debug=debug_enabled)
