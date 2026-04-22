@@ -242,6 +242,22 @@ class MbankAppTests(unittest.TestCase):
         self.assertEqual(mod.get_account("main")["balance"], main_before)
         self.assertEqual(mod.get_account(linked_account["id"])["balance"], mini_before - 1240)
 
+    def test_transfer_analytics_question_stays_in_advice_mode(self):
+        reply, action = mod.fallback_chat_response("Покажи аналитику переводов за месяц")
+
+        self.assertIsNone(action)
+        self.assertIn("перевод", reply.lower())
+        self.assertIn("тег", reply.lower())
+
+    def test_explicit_transfer_command_can_prepare_transfer_action(self):
+        reply, action = mod.fallback_chat_response("Переведи 1500 Айгуль")
+
+        self.assertIsNotNone(action)
+        self.assertEqual(action["action"], "transfer")
+        self.assertEqual(action["amount"], 1500)
+        self.assertEqual(action["contact"], "Айгуль Токтосунова")
+        self.assertIn("перевод", reply.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

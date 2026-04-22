@@ -52,10 +52,15 @@ ALLOWED_AI_ACTIONS = {
     "complete_mission",
 }
 AI_CAPABILITIES_PROMPT = """
-Sezim AI has full app context and can prepare actions for every important MBANK demo workflow.
-Never execute state-changing operations directly in text. For money movement, bills, goals, missions,
-autopilot, or offers, explain briefly and return exactly one JSON action. The frontend will ask the user
-to confirm before execution.
+Sezim AI is primarily an in-app financial navigator. Use live user data to explain balances, spending,
+cash-flow, bills, goals, tags, and risks in a practical way.
+Never execute state-changing operations directly in text. By default, stay in advisory mode and do not
+prepare JSON actions unless the user gives a clear direct command to do something inside the app.
+For money movement, especially transfers, return a JSON action only when the user explicitly instructs
+you to perform that operation. Questions, analysis, hypotheticals, comparisons, and advice must stay
+text-only even if contact names or amounts are mentioned.
+When an action is appropriate, explain briefly and return exactly one JSON action. The frontend will ask
+the user to confirm before execution.
 Never switch screens, redirect the user, or decide navigation for them. If another section is relevant,
 mention it in plain text and let the user open it manually.
 
@@ -69,6 +74,20 @@ Allowed JSON actions:
 {"action":"streak_checkin"}
 {"action":"complete_mission","mission_id":"autopilot|budget_day|save_goal|autopay|tagged_transfer|streak_5"}
 """
+
+EXPLICIT_TRANSFER_PATTERNS = (
+    r"\bпереведи\b",
+    r"\bперевести\b",
+    r"\bсделай перевод\b",
+    r"\bотправь\b",
+    r"\bотправить\b",
+    r"\bскинь\b",
+    r"\bскинуть\b",
+    r"\bперекинь\b",
+    r"\bперекинуть\b",
+    r"\btransfer\b",
+    r"\bsend\b",
+)
 CORS_ORIGINS = [
     origin.strip()
     for origin in os.getenv("MBANK_CORS_ORIGINS", "http://localhost:5000,http://127.0.0.1:5000").split(",")
@@ -706,6 +725,11 @@ def is_sensitive_request(message: str) -> bool:
         "отправь все деньги",
     ]
     return any(pattern in lowered for pattern in risky_patterns)
+
+
+def has_explicit_transfer_intent(message: str) -> bool:
+    lowered = message.lower()
+    return any(re.search(pattern, lowered) for pattern in EXPLICIT_TRANSFER_PATTERNS)
 
 
 def safety_refusal() -> str:
@@ -1353,6 +1377,7 @@ def fallback_chat_response(message: str) -> tuple[str | None, dict[str, Any] | N
     main = get_account("main") or {"balance": 0}
     save = get_account("save") or {"balance": 0}
     safe = compute_safe_to_spend()
+    explicit_transfer = has_explicit_transfer_intent(message)
     if any(word in lowered for word in ("сколько", "баланс", "деньг", "остаток", "счёт", "счет")) and not any(word in lowered for word in ("оплат", "газ", "вода", "электр", "кино")):
         return (
             f"Сейчас на основном счёте {money_text(main['balance'])}, в накоплениях {money_text(save['balance'])}. "
@@ -1372,6 +1397,12 @@ def fallback_chat_response(message: str) -> tuple[str | None, dict[str, Any] | N
             return "Пока нет расходов для анализа. Как только появятся операции, разложу их по категориям и тегам.", None
         top_name, top_amount = max(categories.items(), key=lambda item: item[1])
         return f"Главная категория расходов сейчас: {top_name} — {money_text(top_amount)}. Я бы держал её под недельным лимитом и помечал переводы тегами, чтобы прогноз был точнее.", None
+    if ("перев" in lowered or "кому" in lowered) and not explicit_transfer:
+        tags = transfer_tag_analytics()
+        top_tag = tags.get("top_tag")
+        if top_tag:
+            return f"По переводам сейчас видно такой паттерн: {tags['insight']} Больше всего уходит в тег «{top_tag['label']}» — {money_text(top_tag['amount'])}. Если хочешь, помогу разобрать переводы по целям, риску и регулярности без оформления нового перевода.", None
+        return f"Сейчас я вижу переводы и могу разобрать их по тегам, суммам и влиянию на бюджет. Пока новых действий не готовлю: безопасно тратить до конца месяца {money_text(safe['safe_to_spend'])}.", None
     if any(word in lowered for word in ("цели", "цель", "накопления", "коплю")):
         goals = DB["goals"]
         if goals:
@@ -1387,7 +1418,7 @@ def fallback_chat_response(message: str) -> tuple[str | None, dict[str, Any] | N
         return "Могу активировать M+ резерв как страховку на случай кассового разрыва. Сначала нужно подтверждение.", {"action": "offer", "offer_id": "reserve"}
     if "отмет" in lowered or "стрик" in lowered:
         return "Могу отметить сегодняшний день и обновить серию финансовой дисциплины.", {"action": "streak_checkin"}
-    if "перев" in lowered:
+    if explicit_transfer:
         amount_match = re.search(r"(\d{3,6})", lowered)
         contact = next((item for item in DB["contacts"] if item["name"].split()[0].lower() in lowered), None)
         if amount_match and contact:
@@ -1395,6 +1426,7 @@ def fallback_chat_response(message: str) -> tuple[str | None, dict[str, Any] | N
                 "Подготовил перевод. Проверь сумму и тег перед подтверждением.",
                 {"action": "transfer", "contact": contact["name"], "amount": int(amount_match.group(1)), "tag": contact.get("default_tag", "shared")},
             )
+        return "Чтобы подготовить перевод, нужны получатель и сумма. Пока могу подсказать, кого выбрать и какой тег лучше подойдет.", None
     if "газ" in lowered:
         return "Газ можно оплатить сразу, это снимет один риск из радара.", {"action": "bill", "bill": "gas", "amount": 890}
     offers = compute_smart_offers()
