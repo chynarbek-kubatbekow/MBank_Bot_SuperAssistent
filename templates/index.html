@@ -1198,9 +1198,28 @@ async function loadAIStatus() {
   } catch (e) {}
 }
 
+const AI_FALLBACK_TEXT = {
+  missing_groq_api_key: 'Fallback · нет GROQ_API_KEY на Render',
+  groq_auth_failed: 'Fallback · ключ Groq отклонён (401)',
+  groq_bad_request: 'Fallback · Groq не принял запрос (400)',
+  groq_rate_limited: 'Fallback · лимит Groq исчерпан (429)',
+  groq_network_error: 'Fallback · Render не достучался до Groq',
+};
+
+const AI_SCREEN_LABELS = {
+  'screen-home': 'Главная',
+  'screen-autopilot': 'План месяца',
+  'screen-risk': 'Контроль',
+  'screen-missions': 'Привычки и миссии',
+  'screen-goals': 'Цели',
+  'screen-history': 'История',
+  'screen-bills': 'Счета и платежи',
+  'screen-profile': 'Профиль',
+};
+
 function markAiFallbackFromResponse(data) {
   if (!data || !data.local) return;
-  const text = `Fallback · ${data.fallback_reason || 'local_mode'}`;
+  const text = AI_FALLBACK_TEXT[data.fallback_reason] || `Fallback · ${data.fallback_reason || 'local_mode'}`;
   const panelStatus = $('panel-status');
   const chatStatus = $('chat-status');
   if (panelStatus) {
@@ -2209,9 +2228,9 @@ function handleAIAction(act) {
     });
   } else if (act.action === 'apply_plan') {
     showAiConf('Применить план месяца?', 'Sezim закроет срочные счета, включит автоплатежи и отложит часть денег в накопления.', async () => {
-      closeAiPanel();
-      goScreen('screen-autopilot');
-      setTimeout(() => applyPlan(), 250);
+      const result = await fetchJSON('/api/salary-plan/apply', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+      addAiMsg(`План месяца применён.\nОплачено счетов: **${result.paid_bills.length}**\nАвтоплатежей включено: **${result.autopay_enabled.length}**\nНовый safe to spend: **${money(result.forecast.safe_to_spend)}**`);
+      refreshFinancialViews();
     });
   } else if (act.action === 'offer') {
     showAiConf('Применить предложение?', `Действие: <b>${act.offer_id}</b>`, async () => {
@@ -2231,8 +2250,8 @@ function handleAIAction(act) {
       refreshFinancialViews();
     });
   } else if (act.action === 'open_screen' && act.screen) {
-    closeAiPanel();
-    goScreen(act.screen);
+    const label = AI_SCREEN_LABELS[act.screen] || 'нужный раздел';
+    addAiMsg(`Я не переключаю экраны сам. Если хочешь, открой раздел **${label}** вручную.`);
   }
 }
 

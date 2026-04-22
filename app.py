@@ -50,13 +50,14 @@ ALLOWED_AI_ACTIONS = {
     "offer",
     "streak_checkin",
     "complete_mission",
-    "open_screen",
 }
 AI_CAPABILITIES_PROMPT = """
 Sezim AI has full app context and can prepare actions for every important MBANK demo workflow.
 Never execute state-changing operations directly in text. For money movement, bills, goals, missions,
 autopilot, or offers, explain briefly and return exactly one JSON action. The frontend will ask the user
 to confirm before execution.
+Never switch screens, redirect the user, or decide navigation for them. If another section is relevant,
+mention it in plain text and let the user open it manually.
 
 Allowed JSON actions:
 {"action":"transfer","contact":"Name","amount":1000,"tag":"family|debt|food|taxi|service|gift|travel|rent|health|shared|savings"}
@@ -67,7 +68,6 @@ Allowed JSON actions:
 {"action":"offer","offer_id":"reserve|autopay|savings_boost|travel_goal"}
 {"action":"streak_checkin"}
 {"action":"complete_mission","mission_id":"autopilot|budget_day|save_goal|autopay|tagged_transfer|streak_5"}
-{"action":"open_screen","screen":"screen-home|screen-autopilot|screen-risk|screen-missions|screen-goals|screen-history|screen-bills|screen-profile"}
 """
 CORS_ORIGINS = [
     origin.strip()
@@ -1027,10 +1027,13 @@ def parse_action_from_reply(reply: str) -> tuple[str | None, dict[str, Any] | No
             json_text = json_match.group(0) if json_match else None
         if json_match:
             parsed = _json.loads(json_text)
-            if isinstance(parsed, dict) and parsed.get("action") in ALLOWED_AI_ACTIONS:
-                action_result = parsed
+            if isinstance(parsed, dict):
+                if parsed.get("action") in ALLOWED_AI_ACTIONS:
+                    action_result = parsed
                 clean_reply = (reply[: json_match.start()] + reply[json_match.end() :]).strip()
                 clean_reply = clean_reply.replace("```json", "").replace("```", "").strip() or None
+                if not action_result and parsed.get("action") == "open_screen" and not clean_reply:
+                    clean_reply = "Я могу подсказать нужный раздел, но не переключаю экраны сам."
     except Exception:
         action_result = None
     return clean_reply, action_result
@@ -1459,11 +1462,8 @@ def api_chat():
         DB["chat_history"].append({"role": "assistant", "content": reply})
         return jsonify({"ok": True, "reply": reply, "action": None, "guarded": True})
     if not GROQ_API_KEY:
-        reply, action = fallback_chat_response(user_message)
-        DB["chat_history"].append({"role": "assistant", "content": reply or str(action)})
-        _award_points(10, "Диалог")
-        refresh_scores()
-        return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "missing_groq_api_key"})
+        app.logger.warning("Sezim AI fallback: GROQ_API_KEY is missing")
+        return chat_fallback_payload(user_message, "missing_groq_api_key")
     messages = [
         {"role": "system", "content": build_system_prompt()},
         {"role": "system", "content": AI_CAPABILITIES_PROMPT},
@@ -1475,14 +1475,14 @@ def api_chat():
     try:
         response = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}, json={"model": GROQ_MODEL, "messages": messages, "max_tokens": 600, "temperature": 0.7}, timeout=20)
         if response.status_code == 401:
-            reply, action = fallback_chat_response(user_message)
-            return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_auth_failed", "provider_status": response.status_code})
+            app.logger.warning("Sezim AI fallback: Groq auth failed with status 401")
+            return chat_fallback_payload(user_message, "groq_auth_failed", response.status_code)
         if response.status_code == 400:
-            reply, action = fallback_chat_response(user_message)
-            return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_bad_request", "provider_status": response.status_code})
+            app.logger.warning("Sezim AI fallback: Groq rejected the request with status 400")
+            return chat_fallback_payload(user_message, "groq_bad_request", response.status_code)
         if response.status_code == 429:
-            reply, action = fallback_chat_response(user_message)
-            return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_rate_limited", "provider_status": response.status_code})
+            app.logger.warning("Sezim AI fallback: Groq rate limited the request with status 429")
+            return chat_fallback_payload(user_message, "groq_rate_limited", response.status_code)
         response.raise_for_status()
         result = response.json()
         reply = result["choices"][0]["message"]["content"].strip()
@@ -1491,13 +1491,11 @@ def api_chat():
         _award_points(10, "Диалог")
         refresh_scores()
         return jsonify({"ok": True, "reply": clean_reply, "action": action_result})
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
-        reply, action = fallback_chat_response(user_message)
-        DB["chat_history"].append({"role": "assistant", "content": reply or str(action)})
-        _award_points(10, "Диалог")
-        refresh_scores()
-        return jsonify({"ok": True, "reply": reply, "action": action, "local": True, "mode": "local", "fallback_reason": "groq_network_error"})
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as error:
+        app.logger.warning("Sezim AI fallback: network error while reaching Groq (%s)", error)
+        return chat_fallback_payload(user_message, "groq_network_error")
     except Exception as error:
+        app.logger.exception("Sezim AI failed with an unexpected server error")
         return jsonify({"ok": False, "error": f"Ошибка: {error}"}), 500
 
 
