@@ -214,13 +214,10 @@ def load_state() -> dict[str, Any]:
             try:
                 state = _json.loads(row[0])
                 if isinstance(state, dict):
-                    return state
+                    return normalize_loaded_state(state)
             except _json.JSONDecodeError:
                 pass
-    return initial_db()
-
-
-DB = load_state()
+    return normalize_loaded_state(initial_db())
 
 ICON_TEXT_MAP = {
     "👨‍👩‍👧": "СМ",
@@ -284,6 +281,22 @@ TEXT_REPLACEMENTS = [
 ]
 
 
+ANALYTICS_EXCLUDED_KINDS = {"goal_deposit", "offer_savings", "autopilot", "mini_account_topup", "mini_account_create"}
+ANALYTICS_EXCLUDED_CATEGORIES = {"savings"}
+TAG_COLOR_PALETTE = [
+    "#0EA5E9",
+    "#F97316",
+    "#F59E0B",
+    "#3B82F6",
+    "#14B8A6",
+    "#EC4899",
+    "#8B5CF6",
+    "#06B6D4",
+    "#84CC16",
+    "#009E60",
+]
+
+
 def sanitize_ui_payload(value: Any) -> Any:
     if isinstance(value, dict):
         return {key: sanitize_ui_payload(item) for key, item in value.items()}
@@ -299,6 +312,61 @@ def sanitize_ui_payload(value: Any) -> Any:
         cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
         return cleaned
     return value
+
+
+def normalize_tag_label(value: Any) -> str:
+    label = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(label) > 28:
+        label = label[:28].rstrip()
+    return label
+
+
+def build_tag_icon(label: str) -> str:
+    chunks = re.findall(r"[A-Za-zА-Яа-я0-9]+", label, flags=re.UNICODE)
+    if not chunks:
+        return "ТГ"
+    icon = "".join(chunk[0] for chunk in chunks[:2]).upper()
+    return icon[:2] or "ТГ"
+
+
+def make_custom_tag_id() -> str:
+    existing_ids = {tag["id"] for tag in DB["tags"]}
+    index = 1
+    while f"custom-{index}" in existing_ids:
+        index += 1
+    return f"custom-{index}"
+
+
+def pick_tag_color(seed: str) -> str:
+    palette_index = sum(ord(char) for char in seed) % len(TAG_COLOR_PALETTE)
+    return TAG_COLOR_PALETTE[palette_index]
+
+
+def ensure_custom_tag(label: Any) -> dict[str, Any]:
+    normalized_label = normalize_tag_label(label)
+    if len(normalized_label) < 2:
+        raise ValueError("Название тега должно быть не короче 2 символов")
+    existing = next((tag for tag in DB["tags"] if str(tag.get("label", "")).casefold() == normalized_label.casefold()), None)
+    if existing:
+        return existing
+    new_tag = {
+        "id": make_custom_tag_id(),
+        "label": normalized_label,
+        "icon": build_tag_icon(normalized_label),
+        "color": pick_tag_color(normalized_label),
+        "logic_hint": "custom",
+        "custom": True,
+    }
+    DB["tags"].append(new_tag)
+    return new_tag
+
+
+def resolve_tag_choice(tag_id: Any = None, custom_tag_label: Any = None) -> str | None:
+    custom_label = normalize_tag_label(custom_tag_label)
+    if custom_label:
+        return ensure_custom_tag(custom_label)["id"]
+    normalized_id = str(tag_id or "").strip()
+    return normalized_id or None
 
 
 @app.after_request
@@ -320,6 +388,96 @@ def sanitize_json_response(response):
 
 def get_account(acc_id: str) -> dict[str, Any] | None:
     return next((a for a in DB["accounts"] if a["id"] == acc_id), None)
+
+
+def is_mini_account(account: dict[str, Any] | None) -> bool:
+    return bool(account and account.get("kind") == "mini")
+
+
+def make_mini_account_id() -> str:
+    existing_ids = {account["id"] for account in DB["accounts"]}
+    index = 1
+    while f"mini-{index}" in existing_ids:
+        index += 1
+    return f"mini-{index}"
+
+
+def find_linked_account_by_tag(tag_id: str | None) -> dict[str, Any] | None:
+    if not tag_id:
+        return None
+    return next(
+        (
+            account
+            for account in DB["accounts"]
+            if account.get("tag_id") == tag_id and is_mini_account(account)
+        ),
+        None,
+    )
+
+
+def resolve_payment_account(account_id: Any = None, *, tag_id: str | None = None) -> dict[str, Any] | None:
+    normalized_id = str(account_id or "").strip()
+    account = get_account(normalized_id) if normalized_id else None
+    if account:
+        return account
+    return find_linked_account_by_tag(tag_id) or get_account("main")
+
+
+def normalize_account_label(value: Any) -> str:
+    label = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(label) > 24:
+        label = label[:24].rstrip()
+    return label
+
+
+def ensure_account_schema(accounts: list[dict[str, Any]]) -> None:
+    for account in accounts:
+        if account["id"] == "main":
+            account.setdefault("kind", "main")
+            account.setdefault("card_number", "•••• 4521")
+            account.setdefault("type", "VISA")
+            account.setdefault("color", "main")
+        elif account["id"] == "save":
+            account.setdefault("kind", "savings")
+            account.setdefault("card_number", "•••• 8833")
+            account.setdefault("type", "GOLD")
+            account.setdefault("color", "gold")
+        else:
+            account.setdefault("kind", "mini")
+            account.setdefault("type", "MINI")
+            account.setdefault("color", "mini")
+            account.setdefault("card_number", "•••• mini")
+            account.setdefault("tag_id", None)
+            account.setdefault("custom", True)
+
+
+def normalize_loaded_state(state: dict[str, Any]) -> dict[str, Any]:
+    normalized = state if isinstance(state, dict) else initial_db()
+    defaults = initial_db()
+    normalized.setdefault("tags", defaults["tags"])
+    normalized.setdefault("accounts", defaults["accounts"])
+    normalized.setdefault("transactions", defaults["transactions"])
+    ensure_account_schema(normalized["accounts"])
+    return normalized
+
+
+def create_mini_account(label: str, *, amount: int, tag_id: str | None = None) -> dict[str, Any]:
+    account = {
+        "id": make_mini_account_id(),
+        "label": label,
+        "balance": amount,
+        "card_number": "•••• mini",
+        "type": "MINI",
+        "color": "mini",
+        "kind": "mini",
+        "tag_id": tag_id,
+        "custom": True,
+    }
+    DB["accounts"].append(account)
+    return account
+
+
+DB = load_state()
 
 
 def get_contact_by_id(contact_id: int | None) -> dict[str, Any] | None:
@@ -358,6 +516,170 @@ def default_bill_tag(bill_id: str) -> str:
     if bill_id == "kino":
         return "gift"
     return "service"
+
+
+def analytics_transactions(*, category: str = "all", tag: str = "all") -> list[dict[str, Any]]:
+    txs = [
+        tx
+        for tx in DB["transactions"]
+        if tx["dir"] == "out"
+        and tx.get("kind") not in ANALYTICS_EXCLUDED_KINDS
+        and tx["category"] not in ANALYTICS_EXCLUDED_CATEGORIES
+    ]
+    if category != "all":
+        txs = [tx for tx in txs if tx["category"] == category]
+    if tag != "all":
+        txs = [tx for tx in txs if tx.get("tag") == tag]
+    return txs
+
+
+def analytics_day_bucket(tx: dict[str, Any]) -> str:
+    label = str(tx.get("date", "")).strip()
+    if "," in label:
+        return label.split(",", 1)[0].strip()
+    return label or "unknown"
+
+
+def build_tag_analytics(transactions: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    txs = list(transactions) if transactions is not None else analytics_transactions()
+    buckets: dict[str, dict[str, Any]] = {}
+    total_tagged_amount = 0
+    total_tagged_count = 0
+    total_amount = sum(tx["amount"] for tx in txs)
+    for tx in txs:
+        if not tx.get("tag"):
+            continue
+        tag = get_tag(tx["tag"])
+        if not tag:
+            continue
+        bucket = buckets.setdefault(
+            tag["id"],
+            {
+                "id": tag["id"],
+                "label": tag["label"],
+                "icon": tag["icon"],
+                "color": tag["color"],
+                "custom": bool(tag.get("custom")),
+                "amount": 0,
+                "count": 0,
+            },
+        )
+        bucket["amount"] += tx["amount"]
+        bucket["count"] += 1
+        total_tagged_amount += tx["amount"]
+        total_tagged_count += 1
+    tags = sorted(buckets.values(), key=lambda item: (item["amount"], item["count"]), reverse=True)
+    for tag in tags:
+        tag["share"] = round((tag["amount"] / max(total_tagged_amount, 1)) * 100)
+    top_tag = tags[0] if tags else None
+    untagged_count = max(len(txs) - total_tagged_count, 0)
+    untagged_amount = max(total_amount - total_tagged_amount, 0)
+    insight = "Добавь теги к расходам, и приложение точнее покажет, куда уходит бюджет."
+    if top_tag:
+        insight = f"Больше всего расходов сейчас у тега «{top_tag['label']}» — {top_tag['count']} операций на {top_tag['amount']:,} с."
+        if top_tag["share"] >= 45:
+            insight += " Он уже заметно влияет на прогноз месяца."
+        if untagged_count > 0:
+            insight += f" Без тега пока осталось ещё {untagged_count} операций."
+    return {
+        "tags": tags,
+        "top_tag": top_tag,
+        "total_tagged_amount": total_tagged_amount,
+        "total_tagged_count": total_tagged_count,
+        "tagged_share_by_amount": round((total_tagged_amount / max(total_amount, 1)) * 100) if txs else 0,
+        "tagged_share_by_count": round((total_tagged_count / max(len(txs), 1)) * 100) if txs else 0,
+        "untagged_count": untagged_count,
+        "untagged_amount": untagged_amount,
+        "concentration": top_tag["share"] if top_tag else 0,
+        "insight": insight,
+    }
+
+
+def compute_spending_analytics(*, category: str = "all", tag: str = "all") -> dict[str, Any]:
+    txs = analytics_transactions(category=category, tag=tag)
+    categories: dict[str, int] = {}
+    active_days: set[str] = set()
+    total_spent = 0
+    for tx in txs:
+        total_spent += tx["amount"]
+        categories[tx["category"]] = categories.get(tx["category"], 0) + tx["amount"]
+        active_days.add(analytics_day_bucket(tx))
+    tx_count = len(txs)
+    days_observed = len(active_days)
+    daily_avg = round(total_spent / max(days_observed, 1)) if tx_count else 0
+    average_check = round(total_spent / max(tx_count, 1)) if tx_count else 0
+    frequency_per_day = round(tx_count / max(days_observed, 1), 1) if tx_count else 0
+    frequency_label = "спокойный"
+    if frequency_per_day >= 1.5:
+        frequency_label = "высокий"
+    elif frequency_per_day >= 1:
+        frequency_label = "средний"
+    safe = compute_safe_to_spend()
+    budget_pressure = round((daily_avg / max(safe["daily_safe"], 1)) * 100) if tx_count else 0
+    top_category = None
+    if categories:
+        top_name, top_amount = max(categories.items(), key=lambda item: item[1])
+        top_category = {"name": top_name, "amount": top_amount}
+    tag_analytics = build_tag_analytics(txs)
+    return {
+        "transactions": txs,
+        "tx_count": tx_count,
+        "days_observed": days_observed,
+        "total_spent": total_spent,
+        "daily_avg": daily_avg,
+        "average_check": average_check,
+        "frequency_per_day": frequency_per_day,
+        "frequency_label": frequency_label,
+        "budget_pressure": budget_pressure,
+        "spending_by_category": categories,
+        "top_category": top_category,
+        "tag_analytics": tag_analytics,
+    }
+
+
+def latest_salary_transaction() -> dict[str, Any] | None:
+    return next((tx for tx in DB["transactions"] if tx.get("kind") == "salary"), None)
+
+
+def current_salary_context() -> dict[str, Any]:
+    salary_tx = latest_salary_transaction()
+    if salary_tx:
+        return {
+            "amount": salary_tx["amount"],
+            "date": salary_tx["date"],
+        }
+    return {
+        "amount": DB["autopilot"]["last_salary_amount"],
+        "date": DB["autopilot"]["last_salary_date"],
+    }
+
+
+def refresh_missions_from_state() -> None:
+    safe = compute_safe_to_spend()
+    tagged = transfer_tag_analytics()
+    autopay_enabled = sum(1 for bill in DB["bills"] if bill.get("autopay_enabled"))
+    streak_days = DB["gamification"]["streak_days"]
+
+    budget_day = get_mission("budget_day")
+    if budget_day:
+        budget_day["desc"] = f"Трать не больше {safe['daily_safe']:,} сом/день"
+
+    autopilot = get_mission("autopilot")
+    if autopilot:
+        autopilot["progress"] = 1 if DB["autopilot"]["applied"] else 0
+        autopilot["completed"] = DB["autopilot"]["applied"]
+
+    autopay = get_mission("autopay")
+    if autopay and not autopay["completed"]:
+        autopay["progress"] = min(autopay_enabled, autopay["total"])
+
+    tagged_transfer = get_mission("tagged_transfer")
+    if tagged_transfer and not tagged_transfer["completed"]:
+        tagged_transfer["progress"] = min(tagged["total_tagged_count"], tagged_transfer["total"])
+
+    streak = get_mission("streak_5")
+    if streak and not streak["completed"]:
+        streak["progress"] = min(streak_days, streak["total"])
 
 
 def is_sensitive_request(message: str) -> bool:
@@ -451,23 +773,22 @@ def parse_positive_int(value: Any, field_name: str) -> int:
 
 def spending_by_category() -> dict[str, int]:
     categories: dict[str, int] = {}
-    for tx in DB["transactions"]:
-        if tx["dir"] != "out":
-            continue
+    for tx in analytics_transactions():
         categories[tx["category"]] = categories.get(tx["category"], 0) + tx["amount"]
     return categories
 
 
 def merchant_spending_by_category() -> dict[str, int]:
     categories: dict[str, int] = {}
-    for tx in DB["transactions"]:
-        if tx["dir"] != "out" or tx["category"] == "transfer":
+    for tx in analytics_transactions():
+        if tx["category"] == "transfer":
             continue
         categories[tx["category"]] = categories.get(tx["category"], 0) + tx["amount"]
     return categories
 
 
 def transfer_tag_analytics() -> dict[str, Any]:
+    return build_tag_analytics()
     buckets: dict[str, dict[str, Any]] = {}
     total_tagged_amount = 0
     total_tagged_count = 0
@@ -567,20 +888,46 @@ def update_mission_progress(mission_id: str, *, delta: int = 0, absolute: int | 
 
 
 def refresh_scores() -> None:
+    refresh_missions_from_state()
     due_count = sum(1 for bill in DB["bills"] if bill["status"] in ("due", "overdue"))
+    overdue_count = sum(1 for bill in DB["bills"] if bill["status"] == "overdue")
     autopay_enabled = sum(1 for bill in DB["bills"] if bill.get("autopay_enabled"))
-    tagged = transfer_tag_analytics()
+    safe = compute_safe_to_spend()
+    analytics = compute_spending_analytics()
+    tagged = analytics["tag_analytics"]
     savings_ratio = round((get_account("save")["balance"] / max(total_balance(), 1)) * 100)
-    score = 56
+    score = 82
     if DB["autopilot"]["applied"]:
-        score += 8
-    score += autopay_enabled * 5
-    score += 6 if tagged["total_tagged_count"] >= 3 else 2
-    score += 6 if savings_ratio >= 60 else 2
+        score += 7
+    score += min(12, autopay_enabled * 4)
+    score += 8 if tagged["tagged_share_by_count"] >= 70 else 4 if tagged["tagged_share_by_count"] >= 45 else 0
+    score += 8 if savings_ratio >= 55 else 4 if savings_ratio >= 30 else 0
+    if analytics["tx_count"] >= 10:
+        score -= 8
+    elif analytics["tx_count"] >= 6:
+        score -= 4
+    if analytics["average_check"] >= 2200:
+        score -= 7
+    elif analytics["average_check"] >= 1200:
+        score -= 3
+    if analytics["budget_pressure"] >= 130:
+        score -= 8
+    elif analytics["budget_pressure"] >= 100:
+        score -= 4
+    if tagged["concentration"] >= 60 and tagged["total_tagged_count"] >= 3:
+        score -= 4
     score -= due_count * 7
-    score = max(42, min(score, 96))
+    score -= overdue_count * 4
+    if safe["safe_to_spend"] < 5000:
+        score -= 6
+    score = max(38, min(score, 97))
     DB["gamification"]["discipline_score"] = score
-    DB["user"]["health_score"] = max(55, min(97, score + 4))
+    health_score = score + 4
+    if tagged["tagged_share_by_count"] >= 60:
+        health_score += 2
+    if safe["safe_to_spend"] < 5000:
+        health_score -= 5
+    DB["user"]["health_score"] = max(50, min(98, health_score))
 
 
 def compute_safe_to_spend() -> dict[str, Any]:
@@ -603,12 +950,16 @@ def compute_safe_to_spend() -> dict[str, Any]:
 
 def compute_risk_radar() -> dict[str, Any]:
     safe = compute_safe_to_spend()
+    analytics = compute_spending_analytics()
     categories = merchant_spending_by_category()
-    tags = transfer_tag_analytics()
+    tags = analytics["tag_analytics"]
     restaurants = categories.get("restaurants", 0)
     entertainment = categories.get("entertainment", 0)
     fun_spend = restaurants + entertainment
-    projected_cash_gap = max(0, safe["bills_pending"] + fun_spend + 5000 - get_account("main")["balance"])
+    projected_cash_gap = max(
+        0,
+        analytics["daily_avg"] * max(safe["days_left"], 1) + safe["bills_pending"] + safe["reserve_floor"] - get_account("main")["balance"],
+    )
     recurring_manual = [bill for bill in DB["bills"] if bill.get("recurring") and not bill.get("autopay_enabled")]
     items: list[dict[str, Any]] = []
     if projected_cash_gap > 0 or safe["safe_to_spend"] < 6000:
@@ -620,6 +971,17 @@ def compute_risk_radar() -> dict[str, Any]:
                 "desc": f"До конца месяца запас всего {safe['safe_to_spend']:,} с. Под рукой нужен резерв.",
                 "cta_label": "Посмотреть M+",
                 "cta_action": "offer:reserve",
+            }
+        )
+    if analytics["budget_pressure"] >= 115 and analytics["tx_count"] >= 3:
+        items.append(
+            {
+                "id": "pace",
+                "severity": "high" if analytics["budget_pressure"] >= 140 else "medium",
+                "title": "Темп трат выше безопасного лимита",
+                "desc": f"Средний расход сейчас {analytics['daily_avg']:,} с в день при безопасном лимите {safe['daily_safe']:,} с.",
+                "cta_label": "Открыть аналитику",
+                "cta_action": "analytics",
             }
         )
     if safe["overdue_count"] > 0:
@@ -642,6 +1004,17 @@ def compute_risk_radar() -> dict[str, Any]:
                 "desc": f"Кафе и развлечения уже заняли {fun_spend:,} с. Это главный источник просадки бюджета.",
                 "cta_label": "Ограничить бюджет",
                 "cta_action": "autopilot",
+            }
+        )
+    if tags["untagged_count"] >= 3 and analytics["tx_count"] >= 5:
+        items.append(
+            {
+                "id": "untagged",
+                "severity": "medium",
+                "title": "Часть расходов без тегов",
+                "desc": f"Без тега осталось {tags['untagged_count']} операций. Из-за этого прогноз и рекомендации становятся менее точными.",
+                "cta_label": "Разметить траты",
+                "cta_action": "analytics",
             }
         )
     if tags["top_tag"] and tags["top_tag"]["amount"] >= 1800:
@@ -671,6 +1044,10 @@ def compute_risk_radar() -> dict[str, Any]:
     score -= len([item for item in items if item["severity"] == "high"]) * 18
     score -= len([item for item in items if item["severity"] == "medium"]) * 9
     score -= len(recurring_manual) * 4
+    if analytics["frequency_per_day"] >= 1.5:
+        score -= 6
+    elif analytics["frequency_per_day"] >= 1:
+        score -= 3
     score = max(44, min(score, 96))
     summary = "Ситуация контролируема, но есть сигналы для автоплатежей и резерва."
     if score >= 80:
@@ -685,6 +1062,9 @@ def compute_risk_radar() -> dict[str, Any]:
         "manual_recurring_count": len(recurring_manual),
         "fun_spend": fun_spend,
         "tag_pressure": tags["top_tag"],
+        "average_check": analytics["average_check"],
+        "expense_frequency": analytics["frequency_per_day"],
+        "tagged_share": tags["tagged_share_by_count"],
         "safe_to_spend": safe,
     }
 
@@ -693,6 +1073,7 @@ def compute_smart_offers() -> list[dict[str, Any]]:
     risk = compute_risk_radar()
     safe = risk["safe_to_spend"]
     offers: list[dict[str, Any]] = []
+    boost_amount = max(1000, min(5000, (safe["safe_to_spend"] // 5 // 500) * 500 if safe["safe_to_spend"] >= 5000 else 0))
     if risk["cash_gap_amount"] > 0 or safe["safe_to_spend"] < 6000:
         offers.append(
             {
@@ -719,16 +1100,16 @@ def compute_smart_offers() -> list[dict[str, Any]]:
                 "action": "enable_autopay",
             }
         )
-    if DB["gamification"]["discipline_score"] >= 72 and get_account("main")["balance"] >= 10000:
+    if DB["gamification"]["discipline_score"] >= 72 and get_account("main")["balance"] >= max(boost_amount, 3000) and boost_amount >= 1000:
         offers.append(
             {
                 "id": "savings_boost",
                 "priority": 70,
                 "type": "savings",
                 "title": "Усилить накопления внутри банка",
-                "desc": "По текущей дисциплине можно безопасно добавить ещё 3 000 с в накопления.",
+                "desc": f"По текущей дисциплине можно безопасно добавить ещё {boost_amount:,} с в накопления.",
                 "benefit": "Ускоряет цель и удерживает деньги внутри экосистемы банка.",
-                "cta_label": "Перевести 3 000 с",
+                "cta_label": f"Перевести {boost_amount:,} с",
                 "action": "boost_savings",
             }
         )
@@ -746,6 +1127,11 @@ def compute_smart_offers() -> list[dict[str, Any]]:
                 "action": "focus_travel_goal",
             }
         )
+    for offer in offers:
+        if offer["id"] == "savings_boost":
+            offer["amount"] = boost_amount
+            offer["desc"] = f"РџРѕ С‚РµРєСѓС‰РµР№ РґРёСЃС†РёРїР»РёРЅРµ РјРѕР¶РЅРѕ Р±РµР·РѕРїР°СЃРЅРѕ РґРѕР±Р°РІРёС‚СЊ РµС‰С‘ {boost_amount:,} СЃ РІ РЅР°РєРѕРїР»РµРЅРёСЏ."
+            offer["cta_label"] = f"РџРµСЂРµРІРµСЃС‚Рё {boost_amount:,} СЃ"
     offers.sort(key=lambda item: item["priority"], reverse=True)
     return offers[:3]
 
@@ -795,12 +1181,13 @@ def compute_next_best_action() -> dict[str, Any]:
 def build_notifications() -> list[dict[str, Any]]:
     risk = compute_risk_radar()
     offers = compute_smart_offers()
+    salary_context = current_salary_context()
     notifications = [
         {
             "id": 1,
             "icon": "💰",
             "title": "Зарплата получена",
-            "body": f"{DB['autopilot']['last_salary_amount']:,} с уже на основном счёте",
+            "body": f"{salary_context['amount']:,} с уже на основном счёте",
             "time": "2 ч назад",
             "type": "income",
             "read": False,
@@ -861,7 +1248,8 @@ def compute_salary_plan(salary: int | None = None) -> dict[str, Any]:
     safe = compute_safe_to_spend()
     risk = compute_risk_radar()
     offers = compute_smart_offers()
-    salary_amount = salary or DB["autopilot"]["last_salary_amount"]
+    salary_context = current_salary_context()
+    salary_amount = salary or salary_context["amount"]
     due_bills = [bill for bill in DB["bills"] if bill["status"] in ("due", "overdue")]
     bills_total = sum(bill["amount"] for bill in due_bills)
     savings_pct = 0.20 if risk["cash_gap_amount"] == 0 else 0.12
@@ -873,7 +1261,7 @@ def compute_salary_plan(salary: int | None = None) -> dict[str, Any]:
     recurring_manual = [bill for bill in DB["bills"] if bill.get("recurring") and not bill.get("autopay_enabled")]
     return {
         "salary": salary_amount,
-        "salary_date": DB["autopilot"]["last_salary_date"],
+        "salary_date": salary_context["date"],
         "bills_total": bills_total,
         "savings_amount": savings_amount,
         "daily_budget": daily_budget,
@@ -1049,15 +1437,22 @@ def api_dashboard():
     refresh_scores()
     safe = compute_safe_to_spend()
     risk = compute_risk_radar()
+    analytics = compute_spending_analytics()
+    salary_context = current_salary_context()
+    mini_accounts = [account for account in DB["accounts"] if is_mini_account(account)]
     return jsonify(
         {
             "user": DB["user"],
             "accounts": DB["accounts"],
+            "mini_accounts": mini_accounts,
             "autopilot": DB["autopilot"],
             "total_balance": total_balance(),
             "transactions": DB["transactions"][:6],
-            "spending_by_category": merchant_spending_by_category(),
-            "total_spent": sum(merchant_spending_by_category().values()),
+            "transactions_count": len(DB["transactions"]),
+            "salary_context": salary_context,
+            "spending_by_category": analytics["spending_by_category"],
+            "total_spent": analytics["total_spent"],
+            "analytics": analytics,
             "health_score": DB["user"]["health_score"],
             "goals_count": len(DB["goals"]),
             "bills_due": sum(1 for bill in DB["bills"] if bill["status"] in ("due", "overdue")),
@@ -1066,7 +1461,7 @@ def api_dashboard():
             "risk_summary": {"score": risk["score"], "summary": risk["summary"], "items_count": len(risk["items"])},
             "smart_offers": compute_smart_offers(),
             "next_best_action": compute_next_best_action(),
-            "tag_analytics": transfer_tag_analytics(),
+            "tag_analytics": analytics["tag_analytics"],
         }
     )
 
@@ -1088,6 +1483,16 @@ def api_tags():
     return jsonify({"tags": DB["tags"]})
 
 
+@app.route("/api/tags", methods=["POST"])
+def api_create_tag():
+    data = request.get_json(silent=True) or {}
+    try:
+        tag = ensure_custom_tag(data.get("label"))
+    except ValueError as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    return jsonify({"ok": True, "tag": tag, "message": f"Тег «{tag['label']}» создан"})
+
+
 @app.route("/api/tag-analytics")
 def api_tag_analytics():
     return jsonify(transfer_tag_analytics())
@@ -1100,27 +1505,29 @@ def api_transfer():
         amount = parse_positive_int(data.get("amount"), "Сумма")
     except ValueError as error:
         return jsonify({"ok": False, "error": str(error)}), 400
-    account = get_account(data.get("account_id", "main"))
+    contact = get_contact_by_id(data.get("contact_id")) or get_contact_by_phone(data.get("phone"))
+    if not contact:
+        return jsonify({"ok": False, "error": "Контакт по этому номеру не найден"}), 404
+    try:
+        tag_id = resolve_tag_choice(data.get("tag"), data.get("custom_tag")) or contact.get("default_tag")
+    except ValueError as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    if data.get("phone") and not tag_id:
+        return jsonify({"ok": False, "error": "Укажи тег перевода"}), 400
+    if tag_id and not get_tag(tag_id):
+        return jsonify({"ok": False, "error": "Неизвестный тег"}), 400
+    account = resolve_payment_account(data.get("account_id"), tag_id=tag_id)
     if not account:
         return jsonify({"ok": False, "error": "Счёт не найден"}), 404
     if amount > account["balance"]:
         return jsonify({"ok": False, "error": f"Недостаточно средств. Баланс: {account['balance']:,} с"}), 400
-    contact = get_contact_by_id(data.get("contact_id")) or get_contact_by_phone(data.get("phone"))
-    if not contact:
-        return jsonify({"ok": False, "error": "Контакт по этому номеру не найден"}), 404
-    explicit_tag = data.get("tag")
-    tag_id = explicit_tag or contact.get("default_tag")
-    if data.get("phone") and not explicit_tag:
-        return jsonify({"ok": False, "error": "Укажи тег перевода"}), 400
-    if tag_id and not get_tag(tag_id):
-        return jsonify({"ok": False, "error": "Неизвестный тег"}), 400
     account["balance"] -= amount
     transaction = create_transaction(
         name=f"→ {contact['name'].split()[0]}",
         category="transfer",
         amount=amount,
         direction="out",
-        account_id=data.get("account_id", "main"),
+        account_id=account["id"],
         icon="ПН",
         bg="#0A2040",
         tag=tag_id,
@@ -1135,6 +1542,7 @@ def api_transfer():
         {
             "ok": True,
             "new_balance": account["balance"],
+            "account": account,
             "transaction": transaction,
             "message": f"Перевёл {amount:,} с → {contact['name']}",
             "points_earned": points,
@@ -1153,14 +1561,17 @@ def api_pay_bill():
         return jsonify({"ok": False, "error": "Счёт не найден"}), 404
     if bill["status"] == "paid":
         return jsonify({"ok": False, "error": "Уже оплачено"}), 400
-    account = get_account(data.get("account_id", "main"))
+    try:
+        tag_id = resolve_tag_choice(data.get("tag"), data.get("custom_tag")) or default_bill_tag(bill["id"])
+    except ValueError as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    if tag_id and not get_tag(tag_id):
+        return jsonify({"ok": False, "error": "Неизвестный тег"}), 400
+    account = resolve_payment_account(data.get("account_id"), tag_id=tag_id)
     if not account:
         return jsonify({"ok": False, "error": "Счёт не найден"}), 404
     if bill["amount"] > account["balance"]:
         return jsonify({"ok": False, "error": f"Недостаточно средств. Нужно {bill['amount']:,} с"}), 400
-    tag_id = data.get("tag") or default_bill_tag(bill["id"])
-    if tag_id and not get_tag(tag_id):
-        return jsonify({"ok": False, "error": "Неизвестный тег"}), 400
     account["balance"] -= bill["amount"]
     bill["status"] = "paid"
     bill["due"] = f"Оплачено {datetime.now().strftime('%d.%m')}"
@@ -1169,7 +1580,7 @@ def api_pay_bill():
         category="bills",
         amount=bill["amount"],
         direction="out",
-        account_id=data.get("account_id", "main"),
+        account_id=account["id"],
         icon=bill["icon"],
         bg="#0E3A1C",
         tag=tag_id,
@@ -1177,7 +1588,7 @@ def api_pay_bill():
     )
     _award_points(75, "Bill paid")
     refresh_scores()
-    return jsonify({"ok": True, "new_balance": account["balance"], "message": f"{bill['name']} оплачен — {bill['amount']:,} с", "points_earned": 75, "tag": get_tag(tag_id), "tag_analytics": transfer_tag_analytics(), "risk_radar": compute_risk_radar()})
+    return jsonify({"ok": True, "new_balance": account["balance"], "account": account, "message": f"{bill['name']} оплачен — {bill['amount']:,} с", "points_earned": 75, "tag": get_tag(tag_id), "tag_analytics": transfer_tag_analytics(), "risk_radar": compute_risk_radar()})
 
 
 @app.route("/api/bills")
@@ -1185,6 +1596,71 @@ def api_bills():
     due_count = sum(1 for bill in DB["bills"] if bill["status"] in ("due", "overdue"))
     total_due = sum(bill["amount"] for bill in DB["bills"] if bill["status"] in ("due", "overdue"))
     return jsonify({"bills": DB["bills"], "due_count": due_count, "total_due": total_due})
+
+
+@app.route("/api/mini-accounts", methods=["POST"])
+def api_create_mini_account():
+    data = request.get_json(silent=True) or {}
+    label = normalize_account_label(data.get("label"))
+    if len(label) < 2:
+        return jsonify({"ok": False, "error": "Название мини-счёта должно быть не короче 2 символов"}), 400
+    try:
+        amount = parse_positive_int(data.get("amount"), "Сумма")
+        tag_id = resolve_tag_choice(data.get("tag"), data.get("custom_tag"))
+    except ValueError as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    if tag_id and not get_tag(tag_id):
+        return jsonify({"ok": False, "error": "Неизвестный тег"}), 400
+    if tag_id and find_linked_account_by_tag(tag_id):
+        return jsonify({"ok": False, "error": "Для этого тега уже есть мини-счёт"}), 400
+    main_account = get_account("main")
+    if amount > main_account["balance"]:
+        return jsonify({"ok": False, "error": f"Недостаточно средств на основном счёте. Баланс: {main_account['balance']:,} с"}), 400
+    main_account["balance"] -= amount
+    account = create_mini_account(label, amount=amount, tag_id=tag_id)
+    create_transaction(
+        name=f"Мини-счёт «{label}»",
+        category="transfer",
+        amount=amount,
+        direction="out",
+        account_id="main",
+        icon="МС",
+        bg="#1A0A2E",
+        tag=tag_id,
+        kind="mini_account_create",
+    )
+    refresh_scores()
+    return jsonify({"ok": True, "account": account, "main_balance": main_account["balance"], "tag": get_tag(tag_id), "message": f"Мини-счёт «{label}» создан"})
+
+
+@app.route("/api/mini-accounts/<account_id>/topup", methods=["POST"])
+def api_topup_mini_account(account_id: str):
+    data = request.get_json(silent=True) or {}
+    account = get_account(account_id)
+    if not is_mini_account(account):
+        return jsonify({"ok": False, "error": "Мини-счёт не найден"}), 404
+    try:
+        amount = parse_positive_int(data.get("amount"), "Сумма")
+    except ValueError as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    main_account = get_account("main")
+    if amount > main_account["balance"]:
+        return jsonify({"ok": False, "error": f"Недостаточно средств на основном счёте. Баланс: {main_account['balance']:,} с"}), 400
+    main_account["balance"] -= amount
+    account["balance"] += amount
+    create_transaction(
+        name=f"Пополнение «{account['label']}»",
+        category="transfer",
+        amount=amount,
+        direction="out",
+        account_id="main",
+        icon="МС",
+        bg="#1A0A2E",
+        tag=account.get("tag_id"),
+        kind="mini_account_topup",
+    )
+    refresh_scores()
+    return jsonify({"ok": True, "account": account, "main_balance": main_account["balance"], "message": f"В мини-счёт «{account['label']}» переведено {amount:,} с"})
 
 
 @app.route("/api/goals")
@@ -1235,24 +1711,33 @@ def api_deposit_goal(goal_id: int):
 
 @app.route("/api/insights")
 def api_insights():
-    categories = merchant_spending_by_category()
-    total_spent = sum(categories.values())
+    analytics = compute_spending_analytics(
+        category=request.args.get("category", "all"),
+        tag=request.args.get("tag", "all"),
+    )
     main_balance = get_account("main")["balance"]
-    daily_avg = round(total_spent / max(22, 1))
-    days_until_empty = round(main_balance / max(daily_avg, 1))
+    daily_avg = analytics["daily_avg"]
+    days_until_empty = round(main_balance / max(daily_avg, 1)) if daily_avg else 0
     return jsonify(
         {
             "health_score": DB["user"]["health_score"],
             "personality": DB["user"]["personality"],
-            "spending_by_category": categories,
-            "total_spent": total_spent,
+            "spending_by_category": analytics["spending_by_category"],
+            "total_spent": analytics["total_spent"],
             "daily_avg": daily_avg,
+            "average_check": analytics["average_check"],
+            "tx_count": analytics["tx_count"],
+            "frequency_per_day": analytics["frequency_per_day"],
+            "frequency_label": analytics["frequency_label"],
+            "budget_pressure": analytics["budget_pressure"],
+            "top_category": analytics["top_category"],
+            "tag_analytics": analytics["tag_analytics"],
             "days_until_empty": days_until_empty,
             "prediction": f"При текущих тратах деньги закончатся через ~{days_until_empty} дней",
             "tips": [
                 "Тегированный перевод помогает точнее оценивать риск кассового разрыва.",
                 "Автопилот закрывает счета и включает автоплатежи в один шаг.",
-                transfer_tag_analytics()["insight"],
+                analytics["tag_analytics"]["insight"],
             ],
         }
     )
@@ -1313,17 +1798,18 @@ def chat_fallback_payload(user_message: str, reason: str, provider_status: int |
 
 @app.route("/api/autopilot-status")
 def api_autopilot_status():
-    salary_tx = next((tx for tx in DB["transactions"] if tx["kind"] == "salary"), None)
+    salary_context = current_salary_context()
+    salary_tx = latest_salary_transaction()
     due_bills = [bill for bill in DB["bills"] if bill["status"] in ("due", "overdue")]
     bills_total = sum(bill["amount"] for bill in due_bills)
-    return jsonify({"salary_detected": salary_tx is not None, "salary_amount": salary_tx["amount"] if salary_tx else 0, "salary_date": salary_tx["date"] if salary_tx else "", "bills_due_count": len(due_bills), "bills_total": bills_total, "savings_recommended": round(DB["autopilot"]["last_salary_amount"] * 0.20), "plan_ready": not DB["autopilot"]["applied"], "cycle": DB["autopilot"]["cycle"]})
+    return jsonify({"salary_detected": salary_tx is not None, "salary_amount": salary_context["amount"], "salary_date": salary_context["date"], "bills_due_count": len(due_bills), "bills_total": bills_total, "savings_recommended": round(salary_context["amount"] * 0.20), "plan_ready": not DB["autopilot"]["applied"], "cycle": DB["autopilot"]["cycle"]})
 
 
 @app.route("/api/salary-plan", methods=["POST"])
 def api_salary_plan():
     data = request.get_json(silent=True) or {}
     try:
-        salary = parse_positive_int(data.get("salary", DB["autopilot"]["last_salary_amount"]), "Зарплата")
+        salary = parse_positive_int(data.get("salary", current_salary_context()["amount"]), "Зарплата")
     except ValueError as error:
         return jsonify({"ok": False, "error": str(error)}), 400
     return jsonify({"ok": True, "plan": compute_salary_plan(salary)})
@@ -1396,7 +1882,7 @@ def api_offer_action():
         return jsonify(serialize_offer_outcome("reserve", 75, "M+ резерв активирован. Лимит доступен на случай кассового разрыва"))
     if offer_id == "savings_boost":
         account = get_account("main")
-        amount = 3000
+        amount = next((offer.get("amount", 3000) for offer in compute_smart_offers() if offer["id"] == "savings_boost"), 3000)
         if account["balance"] < amount:
             return jsonify({"ok": False, "error": "Недостаточно средств для усиления накоплений"}), 400
         account["balance"] -= amount
@@ -1404,7 +1890,7 @@ def api_offer_action():
         create_transaction(name="Пополнение накоплений", category="savings", amount=amount, direction="out", account_id="main", icon="НК", bg="#0E3A1C", tag="savings", kind="offer_savings")
         update_mission_progress("save_goal", delta=amount)
         _award_points(60, "Savings boost")
-        return jsonify(serialize_offer_outcome("savings_boost", 60, "3 000 с переведены в накопления по smart offer"))
+        return jsonify(serialize_offer_outcome("savings_boost", 60, f"{amount:,} с переведены в накопления по smart offer"))
     if offer_id == "travel_goal":
         DB["goals"].append({"id": len(DB["goals"]) + 1, "name": "Поездка", "icon": "ПТ", "bg": "#2A1E00", "target": 50000, "saved": 0, "deadline": "Рекомендуемый срок"})
         _award_points(40, "Travel goal")

@@ -203,17 +203,21 @@ body[data-theme="light"]{
 .bal-pill span{display:block;font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;font-weight:500}
 
 /* QUICK ACTIONS  */
-.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.qa-btn{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+.qa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.qa-btn{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+.qa-grid .qa-btn{
+  padding:10px 8px 12px;border-radius:18px;background:var(--bg3);border:1px solid var(--border);
+  min-height:84px;justify-content:center;transition:all .2s;
+}
 .qa-ico{
-  width:58px;height:58px;border-radius:18px;background:var(--card);
+  width:42px;height:42px;border-radius:14px;background:transparent;
   display:flex;align-items:center;justify-content:center;
-  border:1px solid var(--border);
+  border:1px solid rgba(255,255,255,.08);
   font-size:11px;font-weight:800;color:var(--green);
   letter-spacing:.3px;transition:all .2s;
 }
 .qa-ico:active{transform:scale(.93);background:var(--green-soft)}
-.qa-lbl{font-size:10px;color:var(--text3);font-weight:700;text-align:center;letter-spacing:.2px}
+.qa-lbl{font-size:11px;color:var(--text);font-weight:800;text-align:center;letter-spacing:.2px}
 
 /* CARDS  */
 .card{
@@ -371,7 +375,57 @@ body[data-theme="light"]{
 }
 .contact-pill.active,.tag-pill.active{border-color:var(--border-green);background:var(--green-soft);color:var(--green)}
 .tag-hint{font-size:11px;color:var(--text3);line-height:1.4}
+.inline-helper{
+  margin:0 20px 16px;padding:12px 14px;border-radius:16px;
+  background:var(--bg3);border:1px solid var(--border);
+  font-size:12px;line-height:1.5;color:var(--text2);
+}
+.mini-note{font-size:11px;color:var(--text3);line-height:1.4;margin-top:-2px}
+.tag-input-wrap{display:grid;gap:8px}
 .modal-sub{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5}
+.mini-accounts-grid{display:grid;gap:10px}
+.mini-account-card{
+  background:linear-gradient(145deg,#1f1730,#11243a);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:14px;
+}
+.mini-account-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mini-account-name{font-size:14px;font-weight:800;color:var(--text)}
+.mini-account-tag{font-size:10px;color:var(--text3);margin-top:4px}
+.mini-account-balance{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.4px;margin-top:10px}
+.mini-account-actions{display:flex;gap:8px;margin-top:12px}
+.mini-account-empty{
+  padding:16px;border-radius:18px;background:var(--bg3);border:1px dashed var(--border);
+  color:var(--text2);font-size:12px;line-height:1.5;
+}
+.home-action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.home-action-grid .qa-btn{
+  padding:10px 8px 12px;border-radius:18px;background:var(--bg3);border:1px solid var(--border);
+  min-height:84px;gap:8px;justify-content:center;transition:all .2s;
+}
+.home-action-grid .qa-btn:active{transform:scale(.98);background:var(--bg4)}
+.home-action-grid .qa-ico{
+  width:42px;height:42px;border-radius:14px;
+  background:transparent;border-color:rgba(255,255,255,.08);
+}
+.home-action-grid .qa-lbl{font-size:11px;color:var(--text);font-weight:800}
+.home-bills-list{display:grid;gap:10px}
+.home-bill-item{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px;border-radius:16px;background:var(--bg3);border:1px solid var(--border);
+}
+.home-bill-name{font-size:13px;font-weight:800;color:var(--text)}
+.home-bill-meta{font-size:11px;color:var(--text3);margin-top:4px}
+.account-choice-grid{display:grid;gap:8px}
+.account-choice{
+  padding:12px 14px;border-radius:16px;border:1px solid var(--border);
+  background:var(--bg3);cursor:pointer;transition:all .2s;
+}
+.account-choice.active{border-color:var(--border-green);background:var(--green-soft)}
+.account-choice-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.account-choice-name{font-size:13px;font-weight:800;color:var(--text)}
+.account-choice-meta{font-size:10px;color:var(--text3);margin-top:4px}
 
 /* BILLS SECTION  */
 .bill-item{background:var(--bg3);border-radius:18px;padding:14px;border:1px solid var(--border);margin-bottom:10px}
@@ -490,6 +544,7 @@ body[data-theme="light"]{
   background:var(--bg3);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;font-size:11px;font-weight:800;color:var(--text2);font-family:var(--font);
+  flex:0 0 38px;align-self:center;
 }
 .back-btn:active{background:var(--bg4)}
 
@@ -584,6 +639,22 @@ body[data-theme="light"]{
 .analytics-label{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .analytics-value{font-size:16px;font-weight:900;color:var(--text);margin-top:6px}
 .analytics-note{font-size:11px;color:var(--text2);margin-top:5px;line-height:1.4}
+.home-sec-note{font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px}
+#home-spend-analytics{grid-template-columns:repeat(2,1fr)}
+#home-spend-analytics .analytics-card:last-child{grid-column:1 / -1}
+.home-glance{
+  background:linear-gradient(180deg,var(--bg3),var(--card2));
+  border-color:var(--border);
+  display:flex;flex-direction:column;gap:10px;
+}
+.home-glance-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.home-glance-title{font-size:13px;font-weight:800;color:var(--text)}
+.home-glance-sub{font-size:11px;color:var(--text2);line-height:1.45;margin-top:4px}
+.glance-grid{display:flex;flex-wrap:wrap;gap:8px}
+.glance-chip{
+  padding:8px 10px;border-radius:999px;background:var(--card);
+  border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);
+}
 .theme-value{margin-left:auto;font-size:11px;color:var(--text3);font-weight:700}
 
 /* CHAT */
@@ -760,44 +831,69 @@ body[data-theme="light"]{
   </div>
   <!-- Quick actions -->
   <div class="sec">
-    <div class="sec-title">Быстрые действия</div>
+    <div class="sec-title">Что сделать сейчас</div>
     <div class="qa-grid">
       <div class="qa-btn" onclick="openTransferModal()"><div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/><path d="m11 18-6-6 6-6"/></svg></div><div class="qa-lbl">Перевод</div></div>
-      <div class="qa-btn" onclick="goScreen('screen-history')"><div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v6l4 2"/></svg></div><div class="qa-lbl">История</div></div>
+      <div class="qa-btn" onclick="goScreen('screen-bills')"><div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3Z"/></svg></div><div class="qa-lbl">Платежи</div></div>
       <div class="qa-btn" onclick="goScreen('screen-goals')"><div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9L12 16.9 6.8 19.3l1-5.9L3.5 9.2l5.9-.9Z"/></svg></div><div class="qa-lbl">Цели</div></div>
-      <div class="qa-btn" onclick="goScreen('screen-risk')"><div class="qa-ico" style="color:var(--yellow)"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m12 3 8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div><div class="qa-lbl">Контроль</div></div>
     </div>
   </div>
   <div class="sec">
-    <div class="sec-title">Сервисы</div>
-    <div class="shortcut-grid">
-      <div class="shortcut-card" onclick="goScreen('screen-bills')"><div class="shortcut-icon"><svg class="svg-hero" viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3Z"/></svg></div><span>Платежи</span></div>
-      <div class="shortcut-card" onclick="goScreen('screen-history')"><div class="shortcut-icon"><svg class="svg-hero" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v6l4 2"/></svg></div><span>История</span></div>
-      <div class="shortcut-card" onclick="goScreen('screen-risk')"><div class="shortcut-icon"><svg class="svg-hero" viewBox="0 0 24 24"><path d="m12 3 8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div><span>Контроль</span></div>
-      <div class="shortcut-card" onclick="goScreen('screen-chat')"><div class="shortcut-icon"><svg class="svg-hero" viewBox="0 0 24 24"><path d="M7 10h10"/><path d="M7 14h7"/><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg></div><span>Sezim AI</span></div>
+    <div class="home-action-grid">
+      <div class="qa-btn" onclick="goScreen('screen-bills')">
+        <div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3Z"/></svg></div>
+        <div class="qa-lbl">Оплаты</div>
+      </div>
+      <div class="qa-btn" onclick="openMiniAccountModal()">
+        <div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/><rect x="4" y="4" width="16" height="16" rx="4"/></svg></div>
+        <div class="qa-lbl">Мини-счета</div>
+      </div>
+      <div class="qa-btn" onclick="openTagModal()">
+        <div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M20 10 10 20l-7-7L13 3h7z"/><circle cx="16.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg></div>
+        <div class="qa-lbl">Теги</div>
+      </div>
+      <div class="qa-btn" onclick="goScreen('screen-transactions')">
+        <div class="qa-ico"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M5 19V9"/><path d="M12 19V5"/><path d="M19 19v-7"/></svg></div>
+        <div class="qa-lbl">Аналитика</div>
+      </div>
     </div>
   </div>
-  <!-- Autopilot hero -->
-  <div class="sec"><div id="autopilot-hero" class="card card-hero"></div></div>
+  <div id="home-glance" class="inline-helper home-glance"></div>
+  <div class="sec"><div id="home-focus" class="card card-hero"></div></div>
   <div class="sec">
-    <div class="sec-title">Аналитика трат</div>
+    <div class="row" style="margin-bottom:12px">
+      <div class="sec-title" style="margin:0">Счета к оплате</div>
+      <div class="linklike" onclick="goScreen('screen-bills')">Все платежи →</div>
+    </div>
+    <div id="home-bills" class="home-bills-list"></div>
+  </div>
+  <div class="sec">
+    <div class="row" style="margin-bottom:12px">
+      <div class="sec-title" style="margin:0">Как идут траты</div>
+      <div class="linklike" onclick="goScreen('screen-transactions')">Открыть аналитику →</div>
+    </div>
     <div id="home-spend-analytics" class="analytics-grid"></div>
   </div>
-  <!-- NBA -->
-  <div class="sec"><div id="home-nba" class="card"></div></div>
-  <!-- Offers -->
-  <div class="sec"><div class="sec-title">Подходящие предложения</div><div id="home-offers" class="list"></div></div>
-  <!-- Risk -->
   <div class="sec"><div id="home-risk" class="card"></div></div>
-  <!-- Tags -->
-  <div class="sec"><div class="sec-title">Аналитика по тегам</div><div id="home-tags" class="tag-list"></div></div>
-  <!-- Goals preview -->
-  <div class="sec"><div class="sec-title">Мои цели</div><div id="home-goals" class="list"></div></div>
-  <!-- Recent tx -->
+  <div class="sec">
+    <div class="row" style="margin-bottom:12px">
+      <div class="sec-title" style="margin:0">Мои цели</div>
+      <div class="linklike" onclick="goScreen('screen-goals')">Все цели →</div>
+    </div>
+    <div id="home-goals" class="list"></div>
+  </div>
+  <div class="sec">
+    <div class="row" style="margin-bottom:12px">
+      <div class="sec-title" style="margin:0">Мини-счета</div>
+      <div class="linklike" onclick="openMiniAccountModal()">Создать →</div>
+    </div>
+    <div id="home-mini-accounts" class="mini-accounts-grid"></div>
+  </div>
+  <div class="sec"><div class="sec-title">Куда уходят деньги</div><div id="home-tags" class="tag-list"></div></div>
   <div class="sec">
     <div class="row" style="margin-bottom:12px">
       <div class="sec-title" style="margin:0">Последние операции</div>
-      <div class="linklike" onclick="goScreen('screen-history')">История →</div>
+      <div class="linklike" onclick="goScreen('screen-history')">Вся история →</div>
     </div>
     <div class="card" id="home-transactions"></div>
   </div>
@@ -808,8 +904,8 @@ body[data-theme="light"]{
   <div class="topbar-green">
     <div class="sbar"><span class="sbar-t" style="color:rgba(255,255,255,.7)">9:41</span><div class="sbar-r" style="color:rgba(255,255,255,.5)">4G ●●●●</div></div>
     <div class="row" style="padding:0">
-      <div><div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px">Автоплан зарплаты</div><div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:4px">Персональный план на месяц</div></div>
-      <button class="back-btn" onclick="goScreen('screen-home')" style="background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.7)"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+      <button class="back-btn" onclick="goBack('screen-home')" style="background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.7)"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+      <div style="flex:1"><div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px">Автоплан зарплаты</div><div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:4px">Персональный план на месяц</div></div>
     </div>
   </div>
   <div class="sec" style="margin-top:16px"><div id="autopilot-summary" class="card card-hero"></div></div>
@@ -823,7 +919,10 @@ body[data-theme="light"]{
 <div id="screen-applied" class="screen">
   <div class="topbar-green">
     <div class="sbar"><span class="sbar-t" style="color:rgba(255,255,255,.7)">9:41</span><div class="sbar-r" style="color:rgba(255,255,255,.5)">4G</div></div>
-    <div><div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px">План выполнен</div><div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:4px">Настройки месяца обновлены</div></div>
+    <div class="row" style="padding:0">
+      <button class="back-btn" onclick="goBack('screen-home')" style="background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.7)"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+      <div style="flex:1"><div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px">План выполнен</div><div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:4px">Настройки месяца обновлены</div></div>
+    </div>
   </div>
   <div class="sec" style="margin-top:16px"><div id="applied-actions" class="card card-hero"></div></div>
   <div class="sec"><div id="applied-forecast" class="card"></div></div>
@@ -834,9 +933,9 @@ body[data-theme="light"]{
 <!-- ══════════ RISK RADAR ══════════ -->
 <div id="screen-risk" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph row" style="align-items:flex-start">
-    <div><div class="ph-title">Контроль месяца</div><div class="ph-sub">Счета, лимиты и сигналы бюджета</div></div>
-    <button class="back-btn" onclick="goScreen('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Контроль месяца</div><div class="ph-sub">Счета, лимиты и сигналы бюджета</div></div>
   </div>
   <div class="sec"><div id="risk-hero" class="card score-hero"></div></div>
   <div class="sec"><div class="sec-title">Сигналы риска</div><div id="risk-items" class="list"></div></div>
@@ -847,9 +946,9 @@ body[data-theme="light"]{
 <!-- ══════════ MISSIONS ══════════ -->
 <div id="screen-missions" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph row" style="align-items:flex-start">
-    <div><div class="ph-title">Привычки</div><div class="ph-sub">Дисциплина и финансовые миссии</div></div>
-    <button class="back-btn" onclick="goScreen('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Привычки</div><div class="ph-sub">Дисциплина и финансовые миссии</div></div>
   </div>
   <div class="sec"><div id="mission-hero" class="card"></div></div>
   <div class="sec"><button class="cta primary full" onclick="doCheckin()">Отметиться сегодня</button></div>
@@ -859,9 +958,12 @@ body[data-theme="light"]{
 <!-- ══════════ GOALS ══════════ -->
 <div id="screen-goals" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph row" style="align-items:flex-start">
-    <div><div class="ph-title">Цели</div><div class="ph-sub">Накопления внутри приложения</div></div>
-    <button class="back-btn" onclick="openGoalModal()"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Цели</div><div class="ph-sub">Накопления внутри приложения</div></div>
+    <div style="display:flex;gap:10px">
+      <button class="back-btn" onclick="openGoalModal()"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    </div>
   </div>
   <div class="sec"><div id="goals-list" class="list"></div></div>
 </div>
@@ -869,9 +971,9 @@ body[data-theme="light"]{
 <!-- TRANSACTIONS -->
 <div id="screen-transactions" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph row" style="align-items:flex-start">
-    <div><div class="ph-title">Аналитика</div><div class="ph-sub">Категории, теги и структура трат</div></div>
-    <button class="back-btn" onclick="goScreen('screen-history')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v6l4 2"/></svg></button>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Аналитика</div><div class="ph-sub">Категории, теги и структура трат</div></div>
   </div>
   <div class="sec">
     <div class="chips" id="tx-cat-chips">
@@ -889,9 +991,9 @@ body[data-theme="light"]{
 
 <div id="screen-history" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph row" style="align-items:flex-start">
-    <div><div class="ph-title">История</div><div class="ph-sub">Все операции по дням</div></div>
-    <button class="back-btn" onclick="goScreen('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">История</div><div class="ph-sub">Все операции по дням</div></div>
   </div>
   <div class="sec"><div id="history-list"></div></div>
 </div>
@@ -899,9 +1001,9 @@ body[data-theme="light"]{
 <!-- ══════════ BILLS ══════════ -->
 <div id="screen-bills" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph row" style="align-items:flex-start">
-    <div><div class="ph-title">Платежи</div><div class="ph-sub" id="bills-sub">Умные платежи</div></div>
-    <button class="back-btn" onclick="goScreen('screen-history')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v6l4 2"/></svg></button>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Платежи</div><div class="ph-sub" id="bills-sub">Умные платежи</div></div>
   </div>
   <div id="bills-alert-area"></div>
   <div id="bills-body" style="padding:0 20px"><div class="loader"><div class="ld-spin"></div></div></div>
@@ -910,16 +1012,19 @@ body[data-theme="light"]{
 <!-- ══════════ NOTIFICATIONS ══════════ -->
 <div id="screen-notif" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph"><div class="ph-title">Уведомления</div></div>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Уведомления</div><div class="ph-sub">События и подсказки по счетам</div></div>
+  </div>
   <div id="notif-body"><div class="loader"><div class="ld-spin"></div></div></div>
 </div>
 
 <!-- ══════════ CHAT ══════════ -->
 <div id="screen-chat" class="screen" style="padding-bottom:0">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
-  <div class="ph row" style="align-items:flex-start">
-    <div><div class="ph-title">Sezim AI</div><div class="ph-sub" id="chat-status">Онлайн · Безопасный режим</div></div>
-    <button class="back-btn" onclick="goScreen('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+  <div class="ph row" style="align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Sezim AI</div><div class="ph-sub" id="chat-status">Онлайн · Безопасный режим</div></div>
   </div>
   <div class="msgs" id="chat-msgs" style="max-height:none;flex:1;padding:0 16px 8px"></div>
   <div id="chat-conf-area"></div>
@@ -938,6 +1043,10 @@ body[data-theme="light"]{
 <!-- ══════════ PROFILE ══════════ -->
 <div id="screen-profile" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
+  <div class="ph row" style="padding:0 22px 8px;align-items:center">
+    <button class="back-btn" onclick="goBack('screen-home')"><svg class="icon-btn-svg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></button>
+    <div style="flex:1"><div class="ph-title">Профиль</div><div class="ph-sub">Управление и дополнительные разделы</div></div>
+  </div>
   <div class="prof-hdr">
     <div style="display:flex;align-items:center;gap:14px">
       <div class="prof-ava" id="prof-ava">АБ</div>
@@ -976,10 +1085,15 @@ body[data-theme="light"]{
     <div class="m-handle"></div>
     <div class="row"><h3>Перевод по номеру</h3><div class="linklike" onclick="closeModal('transfer-modal')">Закрыть</div></div>
     <div class="form">
+      <div id="transfer-account-choices" class="account-choice-grid"></div>
       <div id="transfer-contacts" class="contact-pills"></div>
       <input id="transfer-phone" class="input" placeholder="+996 700 123 456">
-      <div class="tag-hint">Добавляй тег к переводу, чтобы аналитика точнее показывала, куда уходят деньги.</div>
+      <div class="tag-hint">Выбери готовый тег или впиши свой, чтобы аналитика точно понимала цель перевода.</div>
       <div id="transfer-tags" class="contact-pills"></div>
+      <div class="tag-input-wrap">
+        <input id="transfer-custom-tag" class="input" placeholder="Свой тег, например Подарок маме" oninput="setTransferCustomTag(this.value)">
+        <div class="mini-note">Если впишешь свой тег, он сохранится и появится в общей аналитике.</div>
+      </div>
       <input id="transfer-amount" class="input" type="number" placeholder="Сумма, сом">
       <input id="transfer-note" class="input" placeholder="Комментарий">
       <button class="cta primary full" onclick="submitTransfer()">Перевести</button>
@@ -991,10 +1105,45 @@ body[data-theme="light"]{
   <div class="modal">
     <div class="m-handle"></div>
     <div class="row"><h3>Оплата счёта</h3><div class="linklike" onclick="closeModal('bill-pay-modal')">Закрыть</div></div>
-    <div class="modal-sub" id="bill-pay-title">Выбери тег оплаты, чтобы аналитика правильно отнесла расход.</div>
+    <div class="modal-sub" id="bill-pay-title">Выбери тег оплаты или добавь свой, чтобы аналитика правильно отнесла расход.</div>
     <div class="form">
+      <div id="bill-account-choices" class="account-choice-grid"></div>
       <div id="bill-pay-tags" class="contact-pills"></div>
+      <div class="tag-input-wrap">
+        <input id="bill-custom-tag" class="input" placeholder="Свой тег, например Дом или Подписка" oninput="setBillCustomTag(this.value)">
+        <div class="mini-note">Новый тег можно создать прямо во время оплаты.</div>
+      </div>
       <button class="cta primary full" onclick="confirmBillPayment()">Оплатить</button>
+    </div>
+  </div>
+</div>
+
+<div id="mini-account-modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="row"><h3>Новый мини-счёт</h3><div class="linklike" onclick="closeModal('mini-account-modal')">Закрыть</div></div>
+    <div class="modal-sub">Создай отдельный счёт под конкретную цель или тип оплаты. Если привязать тег, он будет подставляться при оплате.</div>
+    <div class="form">
+      <input id="mini-account-name" class="input" placeholder="Например Транспорт или Обед">
+      <input id="mini-account-amount" class="input" type="number" placeholder="Сколько перевести с основного счёта">
+      <div id="mini-account-tags" class="contact-pills"></div>
+      <div class="tag-input-wrap">
+        <input id="mini-account-custom-tag" class="input" placeholder="Или свой тег" oninput="setMiniAccountCustomTag(this.value)">
+        <div class="mini-note">Один тег можно связать только с одним мини-счётом, чтобы списание было понятным.</div>
+      </div>
+      <button class="cta primary full" onclick="submitMiniAccount()">Создать мини-счёт</button>
+    </div>
+  </div>
+</div>
+
+<div id="tag-modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="row"><h3>Новый тег</h3><div class="linklike" onclick="closeModal('tag-modal')">Закрыть</div></div>
+    <div class="modal-sub">Создай свой тег заранее. После этого он появится в переводах, оплатах и аналитике.</div>
+    <div class="form">
+      <input id="tag-name" class="input" placeholder="Например Обед, Кофе, Транспорт, Дом">
+      <button class="cta primary full" onclick="submitTag()">Создать тег</button>
     </div>
   </div>
 </div>
@@ -1106,15 +1255,22 @@ const state = {
   dashboard: null,
   tags: [],
   contacts: [],
+  screenHistory: [],
   currentCategory: 'all',
   currentTag: 'all',
   depositGoalId: null,
   selectedContactId: null,
   selectedTag: null,
+  customTransferTag: '',
+  selectedTransferAccountId: 'main',
   selectedBillTag: null,
+  customBillTag: '',
+  selectedBillAccountId: 'main',
   pendingBillId: null,
   pendingBillAmount: 0,
   pendingBillName: '',
+  selectedMiniAccountTag: null,
+  customMiniAccountTag: '',
   theme: localStorage.getItem('mbank-theme') || 'dark',
 };
 let aiOn = true, aiHistory = [], aiPendAct = null, aiCurMode = 'chat';
@@ -1252,7 +1408,17 @@ const NAV_MAP = {
   'screen-history':'ni-goals'
 };
 
-function goScreen(id) {
+function getActiveScreenId() {
+  return document.querySelector('.screen.active')?.id || $('phone').dataset.screen || 'screen-home';
+}
+
+function goScreen(id, opts={}) {
+  const { fromBack=false } = opts;
+  const currentId = getActiveScreenId();
+  if (!fromBack && currentId && currentId !== id) {
+    state.screenHistory.push(currentId);
+    if (state.screenHistory.length > 20) state.screenHistory.shift();
+  }
   $('phone').dataset.screen = id;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
@@ -1268,6 +1434,11 @@ function goScreen(id) {
   if (id === 'screen-notif') renderNotifications();
   if (id === 'screen-profile') renderProfile();
   if (id === 'screen-chat') ensureChatIntro();
+}
+
+function goBack(fallback='screen-home') {
+  const previous = state.screenHistory.pop();
+  goScreen(previous || fallback, {fromBack:true});
 }
 
 function openNotifications() {
@@ -1291,6 +1462,24 @@ function closeModal(id) {
    RENDER HELPERS
 ════════════════════════════ */
 function resolveTag(id) { return state.tags.find(t => t.id === id); }
+function upsertTag(tag) {
+  if (!tag?.id) return;
+  const idx = state.tags.findIndex(t => t.id === tag.id);
+  if (idx >= 0) state.tags[idx] = {...state.tags[idx], ...tag};
+  else state.tags.push(tag);
+}
+
+function getMainAccount() {
+  return state.dashboard?.accounts?.find(a => a.id === 'main') || null;
+}
+
+function getMiniAccounts() {
+  return (state.dashboard?.accounts || []).filter(a => a.kind === 'mini');
+}
+
+function getTagLinkedAccount(tagId) {
+  return getMiniAccounts().find(account => account.tag_id === tagId) || null;
+}
 
 function renderTxList(list) {
   if (!list?.length) return `<div class="empty-state"><div class="empty-ico">НО</div><div class="empty-txt">Нет операций</div></div>`;
@@ -1342,6 +1531,27 @@ function renderOfferCard(offer) {
   </div>`;
 }
 
+async function renderHomeBills() {
+  const host = $('home-bills');
+  if (!host) return;
+  try {
+    const data = await fetchJSON('/api/bills');
+    const due = (data.bills || []).filter(b => b.status==='due' || b.status==='overdue').slice(0,3);
+    host.innerHTML = due.length
+      ? due.map(bill => `
+        <div class="home-bill-item">
+          <div>
+            <div class="home-bill-name">${bill.icon} ${cleanUiText(bill.name)}</div>
+            <div class="home-bill-meta">${cleanUiText(bill.due)} · ${bill.status==='overdue' ? 'просрочено' : 'ждёт оплаты'}</div>
+          </div>
+          <button class="cta ${bill.status==='overdue' ? 'ghost' : 'primary'}" onclick="payBillUI('${bill.id}',${bill.amount},'${bill.name.replace(/'/g,"&#39;")}')">${money(bill.amount)}</button>
+        </div>`).join('')
+      : `<div class="mini-account-empty">Срочных оплат сейчас нет. Здесь будут появляться счета, которые можно оплатить одним нажатием.</div>`;
+  } catch (e) {
+    host.innerHTML = `<div class="mini-account-empty">Не удалось загрузить счета к оплате.</div>`;
+  }
+}
+
 /* ════════════════════════════
    HOME
 ════════════════════════════ */
@@ -1350,6 +1560,20 @@ function renderHome() {
   if (!d) return;
   const main = d.accounts.find(a => a.id==='main');
   const save = d.accounts.find(a => a.id==='save');
+  const miniAccounts = d.accounts.filter(a => a.kind === 'mini');
+  const analytics = d.analytics || {};
+  const topTag = d.tag_analytics?.top_tag || null;
+  const taggedShare = d.tag_analytics?.tagged_share_by_count || 0;
+  const spendPressure = analytics.budget_pressure || 0;
+  const frequencyLabel = analytics.frequency_label || 'спокойный';
+  const spendPulse = spendPressure >= 90
+    ? 'Расходы сейчас плотные, лучше смотреть на ближайшие платежи и лимит дня.'
+    : spendPressure >= 70
+      ? 'Темп трат нормальный, но уже полезно держать фокус на обязательных расходах.'
+      : 'Траты идут спокойно, можно ориентироваться на дневной лимит и цели.';
+  const glanceAction = topTag
+    ? `Чаще всего деньги уходят в «${cleanUiText(topTag.label)}».`
+    : 'Добавь тег при следующей трате, и разбор расходов станет заметно понятнее.';
 
   // User
   if (d.user?.name) {
@@ -1359,7 +1583,7 @@ function renderHome() {
   }
 
   // Cards row
-  $('cards-row').innerHTML = d.accounts.map(a => `
+  $('cards-row').innerHTML = d.accounts.filter(a => a.kind !== 'mini').map(a => `
     <div class="bcard ${a.color}" onclick="showToast('${a.label}: ${money(a.balance)}')">
       <div class="card-lbl">${a.label}</div>
       <div class="card-bal" id="bal-${a.id}">${money(a.balance)} <span>сом</span></div>
@@ -1369,69 +1593,93 @@ function renderHome() {
       </div>
     </div>`).join('');
 
+  $('home-mini-accounts').innerHTML = miniAccounts.length
+    ? miniAccounts.map(account => {
+        const linkedTag = resolveTag(account.tag_id);
+        return `<div class="mini-account-card">
+          <div class="mini-account-top">
+            <div>
+              <div class="mini-account-name">${cleanUiText(account.label)}</div>
+              <div class="mini-account-tag">${linkedTag ? `Тег: ${cleanUiText(linkedTag.label)}` : 'Без привязки к тегу'}</div>
+            </div>
+            <div class="badge ${account.balance > 0 ? 'green' : 'yellow'}">${account.balance > 0 ? 'активен' : 'пусто'}</div>
+          </div>
+          <div class="mini-account-balance">${money(account.balance)}</div>
+          <div class="mini-account-actions">
+            <button class="cta ghost" onclick="topupMiniAccountPrompt('${account.id}','${String(account.label).replace(/'/g, '&#39;')}')">Пополнить</button>
+            <button class="cta ghost" onclick="openTransferModal({tag:'${account.tag_id || ''}',accountId:'${account.id}'})">Потратить</button>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div class="mini-account-empty">Создай отдельные мини-счета под транспорт, обед, подписки или любые свои траты. Деньги на них переводятся с основного счёта, а при оплате нужный счёт можно выбрать или привязать к тегу.</div>`;
+
   // Safe to spend
   $('home-safe').textContent = money(d.safe_to_spend.safe_to_spend);
   $('home-daily').textContent = money(d.safe_to_spend.daily_safe) + '/день';
 
-  // Autopilot hero
-  $('autopilot-hero').innerHTML = `
-    <div class="eyebrow">ПЕРСОНАЛЬНЫЙ ПЛАН</div>
-    <h3>Автоплан месяца готов</h3>
-    <div class="card-desc">После зарплаты формируется готовый сценарий: обязательные платежи, накопления и свободный лимит.</div>
-    <div class="stats">
-      <div class="stat"><span>Цикл</span><strong>${d.autopilot.cycle}</strong></div>
-      <div class="stat"><span>Лимит дня</span><strong>${money(d.safe_to_spend.daily_safe)}</strong></div>
-    </div>
-    <div class="row" style="margin-top:14px">
-      <div style="font-size:11px;color:rgba(255,255,255,.5)">${d.autopilot.applied?'Plan applied':'Ready for 1-tap'}</div>
-      <button class="cta gold" onclick="goScreen('screen-autopilot')">${d.autopilot.applied?'Итог':'Открыть план'}</button>
-    </div>`;
-
-  // NBA
   const nba = d.next_best_action;
   const nbaBadgeClass = nba.type==='risk'?'red':nba.type==='offer'?'yellow':'green';
-  $('home-nba').innerHTML = `
+  $('home-glance').innerHTML = `
+    <div class="home-glance-top">
+      <div>
+        <div class="home-glance-title">Коротко по ситуации</div>
+        <div class="home-glance-sub">Главное по деньгам без лишнего текста.</div>
+      </div>
+      <div class="badge ${spendPressure >= 90 ? 'red' : spendPressure >= 70 ? 'yellow' : 'green'}">${frequencyLabel}</div>
+    </div>
+    <div class="glance-grid">
+      <div class="glance-chip">${analytics.tx_count || 0} трат в этом цикле</div>
+      <div class="glance-chip">${d.bills_due || 0} счетов ждут оплаты</div>
+      <div class="glance-chip">${taggedShare}% трат уже размечено</div>
+    </div>
+    <div class="home-glance-sub">${glanceAction}</div>`;
+
+  $('home-focus').innerHTML = `
     <div class="badge ${nbaBadgeClass}">${nba.tag}</div>
     <h3>${nba.title}</h3>
     <div class="card-desc">${nba.desc}</div>
+    <div class="stats">
+      <div class="stat"><span>Период</span><strong>${d.autopilot.cycle}</strong></div>
+      <div class="stat"><span>К оплате</span><strong>${d.bills_due || 0}</strong></div>
+      <div class="stat"><span>Размечено</span><strong>${taggedShare}%</strong></div>
+    </div>
     <div class="row" style="margin-top:12px">
-      <div style="font-size:11px;color:var(--text3)">Рекомендованное действие</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.6)">Без лишних экранов и сложных настроек</div>
       <button class="cta primary" onclick="handleNBA()">${nba.cta}</button>
     </div>`;
-
-  // Offers
-  $('home-offers').innerHTML = d.smart_offers.length
-    ? d.smart_offers.map(renderOfferCard).join('')
-    : `<div class="item"><div class="item-body"><div class="item-title">Предложений нет сейчас</div><div class="item-sub">Появляются только по ситуации месяца.</div></div></div>`;
 
   // Risk summary
   const rScore = d.risk_summary.score;
   $('home-risk').innerHTML = `
     <div class="row">
       <div>
-        <div class="badge ${rScore<60?'red':rScore<75?'yellow':'green'}">Контроль месяца</div>
+        <div class="badge ${rScore<60?'red':rScore<75?'yellow':'green'}">Состояние бюджета</div>
         <h3 style="margin-top:8px">${rScore}/100</h3>
         <div class="card-desc">${d.risk_summary.summary}</div>
       </div>
-      <button class="cta ghost" onclick="goScreen('screen-risk')">Открыть</button>
+      <button class="cta ghost" onclick="goScreen('screen-risk')">Детали</button>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><span>Средний чек</span><strong>${money(analytics.average_check || 0)}</strong></div>
+      <div class="stat"><span>Темп</span><strong>${analytics.frequency_label || 'спокойный'}</strong></div>
+      <div class="stat"><span>Давление</span><strong>${analytics.budget_pressure || 0}%</strong></div>
     </div>`;
 
-  const topSpend = Object.entries(d.spending_by_category || {}).sort((a,b) => b[1]-a[1])[0];
   $('home-spend-analytics').innerHTML = `
     <div class="analytics-card">
-      <div class="analytics-label">За месяц</div>
-      <div class="analytics-value">${money(d.total_spent || 0)}</div>
-      <div class="analytics-note">Все расходные операции</div>
+      <div class="analytics-label">Потрачено сейчас</div>
+      <div class="analytics-value">${money(analytics.total_spent || d.total_spent || 0)}</div>
+      <div class="analytics-note">${analytics.tx_count || 0} операций расхода</div>
     </div>
     <div class="analytics-card">
-      <div class="analytics-label">В день</div>
-      <div class="analytics-value">${money(d.safe_to_spend.daily_safe || 0)}</div>
-      <div class="analytics-note">Текущий безопасный лимит</div>
+      <div class="analytics-label">Средний чек</div>
+      <div class="analytics-value">${money(analytics.average_check || 0)}</div>
+      <div class="analytics-note">${analytics.tx_count || 0} операций · темп ${frequencyLabel} · ${analytics.frequency_per_day || 0} в день</div>
     </div>
     <div class="analytics-card">
-      <div class="analytics-label">Главная статья</div>
-      <div class="analytics-value">${topSpend ? cleanUiText(topSpend[0]) : 'Нет'}</div>
-      <div class="analytics-note">${topSpend ? money(topSpend[1]) : 'Пока нет расходов'}</div>
+      <div class="analytics-label">Главный фокус</div>
+      <div class="analytics-value">${topTag ? cleanUiText(topTag.label) : 'Пока нет'}</div>
+      <div class="analytics-note">${topTag ? `${money(topTag.amount)} · ${topTag.count} операций` : 'Создай тег или отметь следующую трату'}</div>
     </div>`;
 
   // Tags
@@ -1439,13 +1687,10 @@ function renderHome() {
     ? d.tag_analytics.tags.slice(0,4).map(tag =>
         `<div class="tag-card"><strong>${tag.icon} ${tag.label}</strong><span>${money(tag.amount)} · ${tag.share}%</span></div>`
       ).join('')
-    : `<div class="tag-card"><strong>Тегов нет</strong><span>Добавь тег при следующем переводе.</span></div>`;
+    : `<div class="tag-card"><strong>Тегов пока нет</strong><span>Добавь тег при следующей трате или переводе, и эта зона начнёт заполняться автоматически.</span></div>`;
 
   // Transactions
   $('home-transactions').innerHTML = renderTxList(d.transactions);
-
-  // Goals preview
-  renderGoalsPreview();
 }
 
 async function loadDashboard() {
@@ -1453,10 +1698,18 @@ async function loadDashboard() {
     state.dashboard = await fetchJSON('/api/dashboard');
     renderHome();
     renderTransferContacts();
+    renderGoalsPreview();
+    renderHomeBills();
   } catch (e) {
     showToast('Сервер не запущен. Запусти app.py', 4000);
     loadLocalDemoData();
   }
+}
+
+function scheduleSalaryFlash(delay=2000) {
+  const amount = state.dashboard?.salary_context?.amount;
+  if (!amount) return;
+  setTimeout(() => showFlash('Зарплата получена', `${money(amount)} уже на счёте. Открой план от Sezim.`, 'info'), delay);
 }
 
 function loadLocalDemoData() {
@@ -1464,9 +1717,12 @@ function loadLocalDemoData() {
     user: {name:'Айдар Бекторов',phone:'+996 700 123 456',health_score:72,monthly_focus:'Накопить на ноутбук'},
     accounts:[
       {id:'main',label:'Основной счёт',balance:48750,card_number:'•••• 4521',type:'VISA',color:'main'},
-      {id:'save',label:'Накопительный',balance:120000,card_number:'•••• 8833',type:'GOLD',color:'gold'}
+      {id:'save',label:'Накопительный',balance:120000,card_number:'•••• 8833',type:'GOLD',color:'gold'},
+      {id:'mini-1',label:'Транспорт',balance:3200,card_number:'•••• mini',type:'MINI',color:'mini',kind:'mini',tag_id:'taxi'},
+      {id:'mini-2',label:'Обед',balance:1800,card_number:'•••• mini',type:'MINI',color:'mini',kind:'mini',tag_id:'food'}
     ],
     total_balance:168750,
+    salary_context:{amount:65000,date:'Сегодня, 09:00'},
     transactions:[
       {id:1,name:'Зарплата',category:'income',amount:65000,icon:'ЗП',bg:'#0e3a1c',date:'Сегодня, 09:00',dir:'in',tag:'savings'},
       {id:2,name:'Globus',category:'groceries',amount:1240,icon:'ПР',bg:'#2a1e00',date:'Сегодня, 14:23',dir:'out',tag:'shared'},
@@ -1479,7 +1735,8 @@ function loadLocalDemoData() {
     next_best_action:{type:'autopilot',tag:'ПЛАН МЕСЯЦА',title:'Применить автоплан',desc:'Один тап, чтобы закрыть обязательства и выделить накопления.',cta:'Открыть план'},
     smart_offers:[],
     risk_summary:{score:74,summary:'Ситуация контролируема, есть сигналы по автоплатежам.'},
-    tag_analytics:{tags:[{id:'family',label:'Семья',icon:'СМ',amount:2800,share:47},{id:'shared',label:'Совместные',icon:'СВ',amount:1240,share:21}]},
+    analytics:{total_spent:5270,average_check:1054,tx_count:5,frequency_per_day:1.2,frequency_label:'средний',budget_pressure:78},
+    tag_analytics:{tags:[{id:'family',label:'Семья',icon:'СМ',amount:2800,share:47,count:1},{id:'shared',label:'Совместные',icon:'СВ',amount:1240,share:21,count:1}],top_tag:{id:'family',label:'Семья',icon:'СМ',amount:2800,share:47,count:1},tagged_share_by_count:40},
     health_score:72,
     goals_count:3,
     bills_due:2,
@@ -1505,13 +1762,17 @@ function loadLocalDemoData() {
   ];
   renderHome();
   renderTransferContacts();
-  setTimeout(() => showFlash('Зарплата получена', '65 000 с зачислено. Открой план от Sezim.', 'info'), 2000);
+  renderGoalsPreview();
+  renderHomeBills();
+  scheduleSalaryFlash(2000);
 }
 
 /* ════════════════════════════
    GOALS PREVIEW
 ════════════════════════════ */
 function renderGoalsPreview() {
+  const host = $('home-goals');
+  if (!host) return;
   fetchJSON('/api/goals').then(data => {
     const html = data.goals.slice(0,2).map(goal => {
       const pct = Math.min(100, Math.round((goal.saved/goal.target)*100));
@@ -1523,7 +1784,7 @@ function renderGoalsPreview() {
         <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
       </div>`;
     }).join('');
-    $('home-goals').innerHTML = html || `<div class="item"><div class="item-body"><div class="item-title">Нет целей</div><div class="item-sub">Добавь первую цель накоплений.</div></div></div>`;
+    host.innerHTML = html || `<div class="item"><div class="item-body"><div class="item-title">Нет целей</div><div class="item-sub">Добавь первую цель накоплений.</div></div></div>`;
   }).catch(() => {});
 }
 
@@ -1532,7 +1793,7 @@ function renderGoalsPreview() {
 ════════════════════════════ */
 async function loadAutopilot() {
   try {
-    const data = await fetchJSON('/api/salary-plan', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({salary:65000})});
+    const data = await fetchJSON('/api/salary-plan', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
     const p = data.plan;
     $('autopilot-summary').innerHTML = `
       <div class="eyebrow">ПОСТУПЛЕНИЕ ЗАРПЛАТЫ</div>
@@ -1796,7 +2057,7 @@ async function loadTransactions() {
   try {
     const [data, insights] = await Promise.all([
       fetchJSON(`/api/transactions?category=${state.currentCategory}&tag=${state.currentTag}`),
-      fetchJSON('/api/insights')
+      fetchJSON(`/api/insights?category=${state.currentCategory}&tag=${state.currentTag}`)
     ]);
     $('transactions-list').innerHTML = renderTxList(data.transactions);
     $('tx-tag-chips').innerHTML = [
@@ -1804,7 +2065,7 @@ async function loadTransactions() {
     ].concat(state.tags.map(t =>
       `<button class="chip ${state.currentTag===t.id?'active':''}" onclick="setTagFilter('${t.id}',this)">${t.icon} ${t.label}</button>`
     )).join('');
-    const topCategory = Object.entries(insights.spending_by_category || {}).sort((a,b) => b[1]-a[1])[0];
+    const topCategory = insights.top_category;
     $('tx-analytics').innerHTML = `
       <div class="analytics-card">
         <div class="analytics-label">Расходы</div>
@@ -1812,14 +2073,14 @@ async function loadTransactions() {
         <div class="analytics-note">Общий отток денег</div>
       </div>
       <div class="analytics-card">
-        <div class="analytics-label">В день</div>
-        <div class="analytics-value">${money(insights.daily_avg || 0)}</div>
-        <div class="analytics-note">Средний темп трат</div>
+        <div class="analytics-label">Средний чек</div>
+        <div class="analytics-value">${money(insights.average_check || 0)}</div>
+        <div class="analytics-note">${insights.tx_count || 0} операций · ${insights.frequency_per_day || 0}/день</div>
       </div>
       <div class="analytics-card">
         <div class="analytics-label">Лидер</div>
-        <div class="analytics-value">${topCategory ? cleanUiText(topCategory[0]) : 'Нет'}</div>
-        <div class="analytics-note">${topCategory ? money(topCategory[1]) : 'Пока без расходов'}</div>
+        <div class="analytics-value">${topCategory ? cleanUiText(topCategory.name) : 'Нет'}</div>
+        <div class="analytics-note">${topCategory ? `${money(topCategory.amount)} · давление ${insights.budget_pressure || 0}%` : 'Пока без расходов'}</div>
       </div>`;
   } catch (e) { showToast(e.message); }
 }
@@ -1842,9 +2103,10 @@ async function renderBills() {
     const bills = data.bills || [];
     const due = bills.filter(b => b.status==='due'||b.status==='overdue');
     const totalDue = due.reduce((a,b) => a+b.amount, 0);
+    const nearestDue = due[0]?.due ? cleanUiText(due[0].due) : 'сейчас';
     $('bills-sub').textContent = due.length ? `${due.length} счёта ждут — ${money(totalDue)}` : 'Всё оплачено';
     $('bills-alert-area').innerHTML = due.length
-      ? `<div class="bill-alert" style="margin:0 20px 14px"><div style="font-size:10px;font-weight:800;color:var(--orange)">ВН</div><div><div class="ba-t">${due.length} счетов до 25 марта</div><div class="ba-s">Итого: ${money(totalDue)}</div></div></div>`
+      ? `<div class="bill-alert" style="margin:0 20px 14px"><div style="font-size:10px;font-weight:800;color:var(--orange)">ВН</div><div><div class="ba-t">${due.length} счетов ждут оплаты</div><div class="ba-s">Ближайший срок: ${nearestDue} · ${money(totalDue)}</div></div></div>`
       : '';
     $('bills-body').innerHTML = bills.map(b => {
       const amtColor = b.status==='paid'?'var(--green)':b.status==='overdue'?'var(--red)':'var(--orange)';
@@ -1874,11 +2136,49 @@ function renderBillTagOptions() {
   $('bill-pay-tags').innerHTML = state.tags.map(t =>
     `<div class="tag-pill ${state.selectedBillTag===t.id?'active':''}" onclick="selectBillTag('${t.id}')">${t.icon} ${t.label}</div>`
   ).join('');
+  const customInput = $('bill-custom-tag');
+  if (customInput) customInput.value = state.customBillTag || '';
+}
+
+function renderBillAccountChoices() {
+  const host = $('bill-account-choices');
+  if (!host) return;
+  const choices = [getMainAccount(), ...getMiniAccounts()].filter(Boolean);
+  host.innerHTML = choices.map(account => {
+    const linkedTag = resolveTag(account.tag_id);
+    const linkedText = linkedTag ? `Связан с тегом ${cleanUiText(linkedTag.label)}` : 'Выбор вручную';
+    return `<div class="account-choice ${state.selectedBillAccountId===account.id?'active':''}" onclick="selectBillAccount('${account.id}')">
+      <div class="account-choice-top">
+        <div class="account-choice-name">${cleanUiText(account.label)}</div>
+        <div class="badge ${account.kind==='mini'?'yellow':'green'}">${money(account.balance)}</div>
+      </div>
+      <div class="account-choice-meta">${account.kind==='mini' ? linkedText : 'Основной счёт'}</div>
+    </div>`;
+  }).join('');
 }
 
 function selectBillTag(id) {
   state.selectedBillTag = id;
+  state.customBillTag = '';
+  const linked = getTagLinkedAccount(id);
+  state.selectedBillAccountId = linked?.id || 'main';
+  renderBillAccountChoices();
   renderBillTagOptions();
+}
+
+function setBillCustomTag(value) {
+  state.customBillTag = value.trimStart();
+  if (state.customBillTag.trim()) {
+    state.selectedBillTag = null;
+    state.selectedBillAccountId = 'main';
+    renderBillAccountChoices();
+    document.querySelectorAll('#bill-pay-tags .tag-pill').forEach(el => el.classList.remove('active'));
+  }
+}
+
+function selectBillAccount(id) {
+  state.selectedBillAccountId = id;
+  renderBillAccountChoices();
 }
 
 function payBillUI(billId, amount, name='') {
@@ -1886,14 +2186,18 @@ function payBillUI(billId, amount, name='') {
   state.pendingBillAmount = amount;
   state.pendingBillName = name;
   state.selectedBillTag = 'service';
+  state.customBillTag = '';
+  state.selectedBillAccountId = getTagLinkedAccount('service')?.id || 'main';
   $('bill-pay-title').textContent = `${cleanUiText(name)} · ${money(amount)}`;
+  renderBillAccountChoices();
   renderBillTagOptions();
   openModal('bill-pay-modal');
 }
 
 async function confirmBillPayment() {
   if (!state.pendingBillId) return;
-  if (!state.selectedBillTag) {
+  const customTag = (state.customBillTag || '').trim();
+  if (!state.selectedBillTag && !customTag) {
     showToast('Укажи тег оплаты');
     return;
   }
@@ -1903,16 +2207,19 @@ async function confirmBillPayment() {
     const data = await fetchJSON('/api/pay-bill', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({bill_id:state.pendingBillId,account_id:'main',tag:state.selectedBillTag})
+      body:JSON.stringify({bill_id:state.pendingBillId,account_id:state.selectedBillAccountId,tag:state.selectedBillTag,custom_tag:customTag})
     });
     const tag = $(`btag-${state.pendingBillId}`);
     if (tag) { tag.className='bstag paid'; tag.textContent='Оплачено'; }
     const payBtn = $(`paybtn-${state.pendingBillId}`);
     if (payBtn) payBtn.remove();
+    upsertTag(data.tag);
     closeModal('bill-pay-modal');
     showToast(data.message);
     state.pendingBillId = null;
     state.selectedBillTag = null;
+    state.customBillTag = '';
+    state.selectedBillAccountId = 'main';
     await refreshFinancialViews();
   } catch (e) {
     showToast(e.message);
@@ -1949,7 +2256,7 @@ async function renderProfile() {
   $('prof-stats').innerHTML = `
     <div class="pstat"><div class="pstat-val">${money(total)}</div><div class="pstat-lbl">Баланс</div></div>
     <div class="pstat"><div class="pstat-val">${d.health_score||72}</div><div class="pstat-lbl">Индекс</div></div>
-    <div class="pstat"><div class="pstat-val">${(d.transactions||[]).length}</div><div class="pstat-lbl">Операций</div></div>`;
+    <div class="pstat"><div class="pstat-val">${d.transactions_count || (d.transactions||[]).length}</div><div class="pstat-lbl">Операций</div></div>`;
   try {
     const rates = await fetchJSON('/api/rates');
     $('rates-body').innerHTML = `
@@ -1966,16 +2273,35 @@ async function renderProfile() {
 /* ════════════════════════════
    TRANSFERS
 ════════════════════════════ */
+function renderTransferAccountChoices() {
+  const host = $('transfer-account-choices');
+  if (!host) return;
+  const choices = [getMainAccount(), ...getMiniAccounts()].filter(Boolean);
+  host.innerHTML = choices.map(account => {
+    const linkedTag = resolveTag(account.tag_id);
+    return `<div class="account-choice ${state.selectedTransferAccountId===account.id?'active':''}" onclick="selectTransferAccount('${account.id}')">
+      <div class="account-choice-top">
+        <div class="account-choice-name">${cleanUiText(account.label)}</div>
+        <div class="badge ${account.kind==='mini'?'yellow':'green'}">${money(account.balance)}</div>
+      </div>
+      <div class="account-choice-meta">${account.kind==='mini' ? (linkedTag ? `Тег: ${cleanUiText(linkedTag.label)}` : 'Мини-счёт') : 'Основной счёт'}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderTransferContacts() {
   const tc = $('transfer-contacts');
   const tt = $('transfer-tags');
   if (!tc || !tt) return;
+  renderTransferAccountChoices();
   tc.innerHTML = state.contacts.map(c =>
     `<div class="contact-pill ${state.selectedContactId===c.id?'active':''}" onclick="selectContact(${c.id})">${c.initials} · ${c.name.split(' ')[0]}</div>`
   ).join('');
   tt.innerHTML = state.tags.map(t =>
     `<div class="tag-pill ${state.selectedTag===t.id?'active':''}" onclick="selectTag('${t.id}')">${t.icon} ${t.label}</div>`
   ).join('');
+  const customInput = $('transfer-custom-tag');
+  if (customInput) customInput.value = state.customTransferTag || '';
 }
 
 function selectContact(id) {
@@ -1983,19 +2309,40 @@ function selectContact(id) {
   const c = state.contacts.find(x => x.id===id);
   if (c) {
     $('transfer-phone').value = c.phone;
-    if (!state.selectedTag) state.selectedTag = c.default_tag;
+    if (!state.selectedTag && !(state.customTransferTag || '').trim()) state.selectedTag = c.default_tag;
   }
   renderTransferContacts();
 }
 
 function selectTag(id) {
   state.selectedTag = id;
+  state.customTransferTag = '';
+  const linked = getTagLinkedAccount(id);
+  if (linked) state.selectedTransferAccountId = linked.id;
+  renderTransferAccountChoices();
   renderTransferContacts();
+}
+
+function setTransferCustomTag(value) {
+  state.customTransferTag = value.trimStart();
+  if (state.customTransferTag.trim()) {
+    state.selectedTag = null;
+    state.selectedTransferAccountId = 'main';
+    renderTransferAccountChoices();
+    document.querySelectorAll('#transfer-tags .tag-pill').forEach(el => el.classList.remove('active'));
+  }
+}
+
+function selectTransferAccount(id) {
+  state.selectedTransferAccountId = id;
+  renderTransferAccountChoices();
 }
 
 function openTransferModal(prefill={}) {
   state.selectedContactId = prefill.contactId || null;
   state.selectedTag = prefill.tag || null;
+  state.customTransferTag = prefill.customTag || '';
+  state.selectedTransferAccountId = prefill.accountId || getTagLinkedAccount(prefill.tag)?.id || 'main';
   $('transfer-phone').value = prefill.phone || '';
   $('transfer-amount').value = prefill.amount || '';
   $('transfer-note').value = prefill.note || '';
@@ -2005,18 +2352,123 @@ function openTransferModal(prefill={}) {
 
 async function submitTransfer() {
   try {
+    const customTag = (state.customTransferTag || '').trim();
     const payload = {
       phone: $('transfer-phone').value.trim(),
       amount: parseInt($('transfer-amount').value, 10),
       tag: state.selectedTag,
-      account_id: 'main',
+      custom_tag: customTag,
+      account_id: state.selectedTransferAccountId,
     };
-    if (!payload.tag) throw new Error('Укажи тег перевода');
+    if (!payload.tag && !payload.custom_tag) throw new Error('Укажи тег перевода');
     const result = await fetchJSON('/api/transfer', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    upsertTag(result.tag);
     closeModal('transfer-modal');
     showToast(result.message);
+    state.customTransferTag = '';
+    state.selectedTransferAccountId = 'main';
     await refreshFinancialViews();
   } catch (e) { showToast(e.message); }
+}
+
+function renderMiniAccountTags() {
+  const host = $('mini-account-tags');
+  if (!host) return;
+  host.innerHTML = state.tags.map(t =>
+    `<div class="tag-pill ${state.selectedMiniAccountTag===t.id?'active':''}" onclick="selectMiniAccountTag('${t.id}')">${t.icon} ${t.label}</div>`
+  ).join('');
+  const customInput = $('mini-account-custom-tag');
+  if (customInput) customInput.value = state.customMiniAccountTag || '';
+}
+
+function openMiniAccountModal() {
+  state.selectedMiniAccountTag = null;
+  state.customMiniAccountTag = '';
+  $('mini-account-name').value = '';
+  $('mini-account-amount').value = '';
+  renderMiniAccountTags();
+  openModal('mini-account-modal');
+}
+
+function selectMiniAccountTag(id) {
+  state.selectedMiniAccountTag = id;
+  state.customMiniAccountTag = '';
+  renderMiniAccountTags();
+}
+
+function setMiniAccountCustomTag(value) {
+  state.customMiniAccountTag = value.trimStart();
+  if (state.customMiniAccountTag.trim()) {
+    state.selectedMiniAccountTag = null;
+    document.querySelectorAll('#mini-account-tags .tag-pill').forEach(el => el.classList.remove('active'));
+  }
+}
+
+async function submitMiniAccount() {
+  try {
+    const payload = {
+      label: $('mini-account-name').value.trim(),
+      amount: parseInt($('mini-account-amount').value, 10),
+      tag: state.selectedMiniAccountTag,
+      custom_tag: (state.customMiniAccountTag || '').trim(),
+    };
+    const result = await fetchJSON('/api/mini-accounts', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    upsertTag(result.tag);
+    closeModal('mini-account-modal');
+    showToast(result.message);
+    await refreshFinancialViews();
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+
+function openTagModal() {
+  $('tag-name').value = '';
+  openModal('tag-modal');
+}
+
+async function submitTag() {
+  try {
+    const result = await fetchJSON('/api/tags', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({label: $('tag-name').value.trim()})
+    });
+    upsertTag(result.tag);
+    closeModal('tag-modal');
+    renderTransferContacts();
+    renderBillTagOptions();
+    renderMiniAccountTags();
+    showToast(result.message);
+    await refreshFinancialViews();
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+
+async function topupMiniAccountPrompt(accountId, label) {
+  const raw = window.prompt(`Сколько перевести на «${label}» с основного счёта?`);
+  if (raw === null) return;
+  const amount = parseInt(String(raw).trim(), 10);
+  if (!amount || amount <= 0) {
+    showToast('Укажи сумму больше 0');
+    return;
+  }
+  try {
+    const result = await fetchJSON(`/api/mini-accounts/${accountId}/topup`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({amount})
+    });
+    showToast(result.message);
+    await refreshFinancialViews();
+  } catch (e) {
+    showToast(e.message);
+  }
 }
 
 /* ════════════════════════════
@@ -2099,7 +2551,7 @@ function setAiMode(m) {
 async function loadSalaryPanel() {
   $('salary-body').innerHTML = '<div class="loader"><div class="ld-spin"></div></div>';
   try {
-    const data = await fetchJSON('/api/salary-plan', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({salary:65000})});
+    const data = await fetchJSON('/api/salary-plan', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
     const p = data.plan;
     $('salary-body').innerHTML = `
       <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Зарплата <b style="color:var(--green)">${money(p.salary)}</b> — план распределения от Sezim:</div>
@@ -2438,7 +2890,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {
     loadLocalDemoData();
   }
-  setTimeout(() => showFlash('Зарплата получена', '65 000 с — открой автоплан для распределения.', 'info'), 3000);
+  scheduleSalaryFlash(3000);
 });
 </script>
 </body>
