@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -8,10 +8,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* ── RESET ── */
+/* RESET  */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
-/* ── ROOT TOKENS ── */
+/* ROOT TOKENS  */
 :root{
   /* Dark backgrounds */
   --bg:#0D1117;
@@ -92,7 +92,7 @@ body[data-theme="light"]{
   --shadow-green:0 8px 32px rgba(0,141,88,.14);
 }
 
-/* ── BODY / SHELL ── */
+/* BODY / SHELL  */
 body{
   font-family:var(--font);
   background:radial-gradient(ellipse 70% 50% at 20% 80%,rgba(0,193,114,.06) 0%,transparent 60%),
@@ -118,13 +118,13 @@ body[data-theme="light"]{
   box-shadow:0 0 0 1px rgba(255,255,255,.05),0 40px 120px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.03);
 }
 
-/* ── SCREENS ── */
+/* SCREENS  */
 .screen{display:none;height:100%;overflow-y:auto;overflow-x:hidden;flex-direction:column;background:transparent;padding-bottom:94px}
 .screen.active{display:flex}
 .screen::-webkit-scrollbar{display:none}
 .screen{overscroll-behavior:contain}
 
-/* ── STATUS BAR ── */
+/* STATUS BAR  */
 .sbar{
   height:50px;display:flex;align-items:center;justify-content:space-between;
   padding:0 24px;flex-shrink:0;
@@ -132,7 +132,7 @@ body[data-theme="light"]{
 .sbar-t{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.2px}
 .sbar-r{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text2);font-family:var(--mono)}
 
-/* ── DARK TOP BAR ── */
+/* DARK TOP BAR  */
 .topbar-green{
   background:linear-gradient(160deg,#004d2a,#006e3d,#008a4d);
   padding:0 22px 18px;flex-shrink:0;
@@ -140,7 +140,7 @@ body[data-theme="light"]{
 .topbar-green .sbar{padding:0}
 .topbar-green .sbar-t,.topbar-green .sbar-r{color:rgba(255,255,255,.7)}
 
-/* ── BOTTOM NAV ── */
+/* BOTTOM NAV  */
 .bnav{
   position:absolute;bottom:0;width:100%;height:86px;
   background:rgba(13,17,23,.92);backdrop-filter:blur(20px);
@@ -162,16 +162,16 @@ body[data-theme="light"]{
 .icon-btn-svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .icon-btn-svg.fill{fill:currentColor;stroke:none}
 
-/* ── SECTION PADDING ── */
+/* SECTION PADDING  */
 .sec{padding:0 20px 16px}
 .sec-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
 
-/* ── PAGE HEADER ── */
+/* PAGE HEADER  */
 .ph{padding:14px 22px 18px}
 .ph-title{font-size:24px;font-weight:900;color:var(--text);letter-spacing:-.6px}
 .ph-sub{font-size:12px;color:var(--text3);margin-top:4px;font-weight:500}
 
-/* ── BALANCE CARD ── */
+/* BALANCE CARD  */
 .bal-card{
   margin:0 20px 16px;
   background:linear-gradient(145deg,#003d23 0%,#006135 50%,#007d45 100%);
@@ -202,7 +202,7 @@ body[data-theme="light"]{
 .bal-pill strong{display:block;font-size:14px;font-weight:800;color:#fff}
 .bal-pill span{display:block;font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;font-weight:500}
 
-/* ── QUICK ACTIONS ── */
+/* QUICK ACTIONS  */
 .qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .qa-btn{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
 .qa-ico{
@@ -215,7 +215,7 @@ body[data-theme="light"]{
 .qa-ico:active{transform:scale(.93);background:var(--green-soft)}
 .qa-lbl{font-size:10px;color:var(--text3);font-weight:700;text-align:center;letter-spacing:.2px}
 
-/* ── CARDS ── */
+/* CARDS  */
 .card{
   background:var(--card);border-radius:var(--radius);
   padding:16px;border:1px solid var(--border);
@@ -227,7 +227,7 @@ body[data-theme="light"]{
 }
 .card + .card{margin-top:12px}
 
-/* ── EYEBROW / BADGE ── */
+/* EYEBROW / BADGE  */
 .eyebrow{
   display:inline-flex;align-items:center;gap:6px;
   padding:4px 10px;border-radius:999px;font-size:9px;font-weight:800;
@@ -241,11 +241,11 @@ body[data-theme="light"]{
 .badge.yellow{background:var(--yellow-soft);color:var(--yellow)}
 .badge.orange{background:var(--orange-soft);color:var(--orange)}
 
-/* ── CARD TITLE ── */
+/* CARD TITLE  */
 .card h3{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.4px;margin-top:10px}
 .card-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-top:7px}
 
-/* ── STATS GRID ── */
+/* STATS GRID  */
 .stats{display:flex;gap:10px;margin-top:14px}
 .stat{flex:1;background:rgba(0,0,0,.3);border-radius:14px;padding:10px 12px;border:1px solid var(--border)}
 .stat span{display:block;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
@@ -254,7 +254,7 @@ body[data-theme="light"]{
 .card-hero .stat span{color:rgba(255,255,255,.5)}
 .card-hero .stat strong{color:#fff}
 
-/* ── CTA BUTTONS ── */
+/* CTA BUTTONS  */
 .cta{border:none;border-radius:14px;padding:12px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font);transition:all .2s;letter-spacing:.1px}
 .cta:active{transform:scale(.97)}
 .cta.primary{background:var(--green);color:#000}
@@ -265,13 +265,13 @@ body[data-theme="light"]{
 .cta.full{width:100%}
 .cta.danger{background:var(--red-soft);color:var(--red);border:1px solid rgba(240,82,82,.25)}
 
-/* ── ROW ── */
+/* ROW  */
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 
-/* ── NBA CARD ── */
+/* NBA CARD  */
 .nba-card{background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border)}
 
-/* ── LIST ITEMS ── */
+/* LIST ITEMS  */
 .list{display:flex;flex-direction:column;gap:10px}
 .item{
   display:flex;gap:12px;align-items:flex-start;padding:14px;
@@ -287,7 +287,7 @@ body[data-theme="light"]{
 .item-sub{font-size:12px;color:var(--text2);line-height:1.4;margin-top:4px}
 .item-meta{font-size:12px;font-weight:700;color:var(--green);margin-top:6px}
 
-/* ── TAGS ── */
+/* TAGS  */
 .tag-list{display:flex;flex-wrap:wrap;gap:10px}
 .tag-card{
   flex:1 1 46%;min-width:0;padding:12px;border-radius:16px;
@@ -296,7 +296,7 @@ body[data-theme="light"]{
 .tag-card strong{display:block;font-size:13px;font-weight:700;color:var(--text)}
 .tag-card span{display:block;font-size:11px;color:var(--text2);margin-top:4px}
 
-/* ── GOALS ── */
+/* GOALS  */
 .goal{padding:14px;border-radius:18px;background:var(--bg3);border:1px solid var(--border)}
 .goal-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .goal-name{font-size:14px;font-weight:800;color:var(--text)}
@@ -307,7 +307,7 @@ body[data-theme="light"]{
 .linklike{font-size:12px;font-weight:700;color:var(--green);cursor:pointer;white-space:nowrap}
 .linklike:active{opacity:.7}
 
-/* ── TRANSACTIONS ── */
+/* TRANSACTIONS  */
 .tx{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
 .tx:last-child{border-bottom:none}
 .tx-ico{width:44px;height:44px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;color:#fff;letter-spacing:.3px}
@@ -317,7 +317,7 @@ body[data-theme="light"]{
 .tx-amt{font-size:14px;font-weight:800;color:var(--text)}
 .tx-amt.in{color:var(--green)}
 
-/* ── CHIPS / FILTERS ── */
+/* CHIPS / FILTERS  */
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:4px}
 .chips::-webkit-scrollbar{display:none}
 .chip{
@@ -328,20 +328,20 @@ body[data-theme="light"]{
 .chip.active{background:var(--green-soft);color:var(--green);border-color:var(--border-green)}
 .chip:active{transform:scale(.96)}
 
-/* ── SCORE / RING ── */
+/* SCORE / RING  */
 .score-hero{background:linear-gradient(145deg,#003d23,#005c35);border-color:var(--border-green)}
 .score-num{font-size:44px;font-weight:900;letter-spacing:-2px;color:#fff;line-height:1}
 .score-num span{font-size:18px;opacity:.6}
 .ring-wrap{position:relative;width:70px;height:70px;flex-shrink:0}
 .ring-val{position:absolute;inset:0;display:grid;place-items:center;font-size:16px;font-weight:900;color:var(--text)}
 
-/* ── MISSION ── */
+/* MISSION  */
 .mission{padding:14px;border-radius:18px;background:var(--bg3);border:1px solid var(--border)}
 .mission-top{display:flex;gap:12px;align-items:flex-start}
 .mission-pts{font-size:12px;font-weight:900;color:var(--yellow)}
 .mission-done{font-size:12px;font-weight:700;color:var(--green);margin-top:8px}
 
-/* ── MODALS ── */
+/* MODALS  */
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;z-index:1200;backdrop-filter:blur(4px);overflow:hidden}
 .modal-backdrop.show{display:flex}
 .modal{
@@ -373,7 +373,7 @@ body[data-theme="light"]{
 .tag-hint{font-size:11px;color:var(--text3);line-height:1.4}
 .modal-sub{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5}
 
-/* ── BILLS SECTION ── */
+/* BILLS SECTION  */
 .bill-item{background:var(--bg3);border-radius:18px;padding:14px;border:1px solid var(--border);margin-bottom:10px}
 .bill-row{display:flex;align-items:center;gap:12px}
 .bill-ico{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;background:var(--bg4);color:var(--text2)}
@@ -391,7 +391,7 @@ body[data-theme="light"]{
 .pay-btn.danger{background:var(--red-soft);color:var(--red);border:1px solid rgba(240,82,82,.25)}
 .bill-tip{font-size:11px;color:var(--text3);margin-top:7px;line-height:1.4}
 
-/* ── PROFILE ── */
+/* PROFILE  */
 .prof-hdr{
   background:linear-gradient(160deg,#003d23,#00543100);
   padding:20px 22px 24px;flex-shrink:0;border-bottom:1px solid var(--border);
@@ -411,7 +411,7 @@ body[data-theme="light"]{
 .pstat-val{font-size:18px;font-weight:900;color:var(--green)}
 .pstat-lbl{font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 
-/* ── RATES ── */
+/* RATES  */
 .rates-card{margin:16px 20px 0;background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border)}
 .rate-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
 .rate-row:last-child{border:none}
@@ -419,7 +419,7 @@ body[data-theme="light"]{
 .rate-vals{text-align:right;font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)}
 .rate-sub{font-size:10px;color:var(--text3);margin-top:2px}
 
-/* ── MENU ── */
+/* MENU  */
 .menu-sec{margin:14px 20px 0}
 .menu-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
 .menu-item{
@@ -431,7 +431,7 @@ body[data-theme="light"]{
 .menu-item-t{flex:1;font-size:14px;font-weight:600;color:var(--text)}
 .menu-item-arr{color:var(--text3);font-size:16px}
 
-/* ── NOTIFICATIONS ── */
+/* NOTIFICATIONS  */
 .notif-item{
   margin:0 20px 10px;background:var(--card);border-radius:16px;
   padding:14px;border:1px solid var(--border);display:flex;gap:12px;
@@ -444,7 +444,7 @@ body[data-theme="light"]{
 .n-time{font-size:11px;color:var(--text3);margin-top:4px}
 .n-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px}
 
-/* ── SUCCESS OVERLAY ── */
+/* SUCCESS OVERLAY  */
 #succ-ov{
   position:absolute;top:0;left:0;right:0;bottom:0;z-index:2000;
   background:var(--bg2);display:none;flex-direction:column;
@@ -469,7 +469,7 @@ body[data-theme="light"]{
 .sd-val{font-weight:700;color:var(--text)}
 .done-btn{margin-top:22px;padding:15px;background:var(--green);color:#000;border:none;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;width:100%;font-family:var(--font)}
 
-/* ── TOAST ── */
+/* TOAST  */
 #toast{
   position:absolute;bottom:100px;left:50%;transform:translateX(-50%);
   background:var(--bg4);color:var(--text);font-size:12px;font-weight:700;
@@ -479,12 +479,12 @@ body[data-theme="light"]{
 }
 #toast.show{opacity:1}
 
-/* ── LOADER ── */
+/* LOADER  */
 .loader{display:flex;align-items:center;justify-content:center;padding:40px;flex:1}
 .ld-spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--bg4);border-top-color:var(--green);animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── BACK BTN ── */
+/* BACK BTN  */
 .back-btn{
   width:38px;height:38px;border:none;border-radius:12px;
   background:var(--bg3);border:1px solid var(--border);
@@ -634,11 +634,11 @@ body[data-theme="light"]{
 .conf-yes{flex:1;padding:10px;background:var(--green);color:#000;border:none;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font)}
 .conf-no{flex:1;padding:10px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)}
 
-/* ── AI TOGGLE PILL ── */
+/* AI TOGGLE PILL  */
 #ai-tog{
   position:absolute;top:13px;right:16px;z-index:200;
   background:var(--green-soft);border-radius:22px;padding:5px 11px;
-  display:flex;align-items:center;gap:5px;cursor:pointer;
+  display:none;align-items:center;gap:5px;cursor:pointer;
   font-size:10px;color:var(--green);font-weight:800;
   border:1px solid var(--border-green);letter-spacing:.3px;
 }
@@ -646,7 +646,7 @@ body[data-theme="light"]{
 #ai-tog-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
 #ai-tog.off #ai-tog-dot{background:var(--red)}
 
-/* ── BILLS ALERT ── */
+/* BILLS ALERT  */
 .bill-alert{
   margin:0 20px 14px;background:var(--orange-soft);border-radius:16px;
   padding:13px;border:1px solid rgba(240,120,48,.2);display:flex;gap:12px;align-items:flex-start;
@@ -654,7 +654,7 @@ body[data-theme="light"]{
 .ba-t{font-size:13px;font-weight:800;color:var(--orange)}
 .ba-s{font-size:11px;color:rgba(240,120,48,.7);margin-top:2px}
 
-/* ── HOME CARDS ROW ── */
+/* HOME CARDS ROW  */
 .cards-row{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 4px}
 .cards-row::-webkit-scrollbar{display:none}
 .shortcut-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
@@ -677,6 +677,10 @@ body[data-theme="light"]{
 .phone.modal-open #ai-fab,
 .phone.modal-open #ai-tog,
 .phone.modal-open #ai-flash{display:none}
+.phone[data-screen="screen-chat"] .bnav,
+.phone[data-screen="screen-chat"] #ai-fab,
+.phone[data-screen="screen-chat"] #ai-tog,
+.phone[data-screen="screen-chat"] #ai-flash{display:none}
 .bcard{
   min-width:272px;border-radius:22px;padding:18px;position:relative;
   overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform .2s;
@@ -694,7 +698,7 @@ body[data-theme="light"]{
 .card-tag{background:rgba(0,193,114,.15);color:rgba(0,193,114,.8);font-size:10px;padding:3px 9px;border-radius:20px;font-weight:800;border:1px solid rgba(0,193,114,.2)}
 .card-tag.gold{background:rgba(245,200,66,.12);color:var(--yellow);border-color:rgba(245,200,66,.2)}
 
-/* ── HOME TX MINI ── */
+/* HOME TX MINI  */
 .txi{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .txi:last-child{border:none}
 .txi-ico{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;color:rgba(255,255,255,.7)}
@@ -704,31 +708,31 @@ body[data-theme="light"]{
 .txi-amt.out{color:var(--text)}
 .txi-amt.in{color:var(--green)}
 
-/* ── AUTOPILOT SCREEN SPECIFIC ── */
+/* AUTOPILOT SCREEN SPECIFIC  */
 .ap-pill{background:rgba(0,0,0,.25);border:1px solid rgba(0,193,114,.15);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
 .ap-pill span{font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
 .ap-pill strong{font-size:14px;font-weight:800;color:#fff}
 
-/* ── YELLOW ACCENT ITEMS ── */
+/* YELLOW ACCENT ITEMS  */
 .yellow-card{background:linear-gradient(145deg,#1a1300,#261a00);border-color:rgba(245,200,66,.2);box-shadow:0 8px 24px rgba(245,200,66,.08)}
 .yellow-card .badge.yellow{background:var(--yellow-soft);color:var(--yellow)}
 
-/* ── PROGRESS RING ── */
+/* PROGRESS RING  */
 .progress-ring{transform:rotate(-90deg)}
 .progress-ring circle{stroke-linecap:round;transition:stroke-dashoffset .8s ease}
 
-/* ── EMPTY STATE ── */
+/* EMPTY STATE  */
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:10px;text-align:center}
 .empty-ico{font-size:11px;font-weight:800;color:var(--text3);background:var(--bg3);width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center}
 .empty-txt{font-size:13px;color:var(--text3)}
 
-@media(max-width:420px){body{background:var(--bg)}.phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}}
+@media(max-width:520px){body{background:var(--bg)}.phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}}
 </style>
 </head>
 <body>
 <div class="phone" id="phone">
 
-<!-- ══════════ HOME SCREEN ══════════ -->
+<!-- HOME SCREEN -->
 <div id="screen-home" class="screen active">
   <div class="sbar"><span class="sbar-t" id="cur-time">9:41</span><div class="sbar-r">4G ●●●●</div></div>
   <div style="padding:6px 22px 16px">
@@ -815,7 +819,7 @@ body[data-theme="light"]{
   <div class="sec"><button id="apply-plan-btn" class="cta gold full" onclick="applyPlan()" style="font-size:15px;padding:15px">Применить план месяца</button></div>
 </div>
 
-<!-- ══════════ APPLIED SCREEN ══════════ -->
+<!-- APPLIED SCREEN -->
 <div id="screen-applied" class="screen">
   <div class="topbar-green">
     <div class="sbar"><span class="sbar-t" style="color:rgba(255,255,255,.7)">9:41</span><div class="sbar-r" style="color:rgba(255,255,255,.5)">4G</div></div>
@@ -862,7 +866,7 @@ body[data-theme="light"]{
   <div class="sec"><div id="goals-list" class="list"></div></div>
 </div>
 
-<!-- ══════════ TRANSACTIONS ══════════ -->
+<!-- TRANSACTIONS -->
 <div id="screen-transactions" class="screen">
   <div class="sbar"><span class="sbar-t">9:41</span><div class="sbar-r">4G ●●●●</div></div>
   <div class="ph row" style="align-items:flex-start">
@@ -961,8 +965,8 @@ body[data-theme="light"]{
 <div class="bnav">
   <div class="ni active" id="ni-home" onclick="goScreen('screen-home')"><div class="ni-ico"><svg class="nav-svg fill" viewBox="0 0 24 24"><path d="M12 4 4 10v10h5v-6h6v6h5V10Z"/></svg></div><div class="ni-lbl">Главная</div></div>
   <div class="ni" id="ni-autopilot" onclick="goScreen('screen-bills')"><div class="ni-ico"><svg class="nav-svg" viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3Z"/></svg></div><div class="ni-lbl">Платежи</div></div>
-  <div class="ni" id="ni-risk" onclick="goScreen('screen-chat')"><div class="ni-ico"><svg class="nav-svg" viewBox="0 0 24 24"><path d="M7 10h10"/><path d="M7 14h7"/><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg></div><div class="ni-lbl">Sezim AI</div></div>
-  <div class="ni" id="ni-missions" onclick="goScreen('screen-risk')"><div class="ni-ico"><svg class="nav-svg" viewBox="0 0 24 24"><path d="m12 3 8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div><div class="ni-lbl">Сервисы</div></div>
+  <div class="ni" id="ni-risk" onclick="goScreen('screen-risk')"><div class="ni-ico"><svg class="nav-svg" viewBox="0 0 24 24"><path d="m12 3 8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div><div class="ni-lbl">Контроль</div></div>
+  <div class="ni" id="ni-missions" onclick="goScreen('screen-missions')"><div class="ni-ico"><svg class="nav-svg" viewBox="0 0 24 24"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9L12 16.9 6.8 19.3l1-5.9L3.5 9.2l5.9-.9Z"/></svg></div><div class="ni-lbl">Привычки</div></div>
   <div class="ni" id="ni-goals" onclick="goScreen('screen-profile')"><div class="ni-ico"><svg class="nav-svg" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></div><div class="ni-lbl">Еще</div></div>
 </div>
 
@@ -1093,7 +1097,7 @@ body[data-theme="light"]{
 /* ════════════════════════════
    CONFIG
 ════════════════════════════ */
-const API = 'http://localhost:5000/api';
+const API = '/api';
 
 /* ════════════════════════════
    STATE
@@ -1178,6 +1182,22 @@ async function fetchJSON(url, opts={}) {
   return data;
 }
 
+async function loadAIStatus() {
+  try {
+    const status = await fetchJSON('/api/ai-status');
+    const text = 'Онлайн · Безопасный режим';
+    const panelStatus = $('panel-status');
+    const chatStatus = $('chat-status');
+    if (panelStatus) {
+      panelStatus.textContent = text;
+      panelStatus.style.color = 'var(--green)';
+    }
+    if (chatStatus) {
+      chatStatus.textContent = text;
+    }
+  } catch (e) {}
+}
+
 function refreshFinancialViews() {
   return Promise.all([
     loadDashboard(),
@@ -1195,13 +1215,14 @@ function refreshFinancialViews() {
 const NAV_MAP = {
   'screen-home':'ni-home',
   'screen-bills':'ni-autopilot',
-  'screen-chat':'ni-risk',
-  'screen-risk':'ni-missions',
+  'screen-risk':'ni-risk',
+  'screen-missions':'ni-missions',
   'screen-profile':'ni-goals',
   'screen-history':'ni-goals'
 };
 
 function goScreen(id) {
+  $('phone').dataset.screen = id;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
@@ -1215,6 +1236,7 @@ function goScreen(id) {
   if (id === 'screen-bills') renderBills();
   if (id === 'screen-notif') renderNotifications();
   if (id === 'screen-profile') renderProfile();
+  if (id === 'screen-chat') ensureChatIntro();
 }
 
 function openNotifications() {
@@ -1224,6 +1246,7 @@ function openNotifications() {
 /* ════════════════════════════
    MODALS
 ════════════════════════════ */
+
 function openModal(id) {
   $(id).classList.add('show');
   $('phone').classList.add('modal-open');
@@ -1401,11 +1424,11 @@ async function loadDashboard() {
     renderTransferContacts();
   } catch (e) {
     showToast('Сервер не запущен. Запусти app.py', 4000);
-    loadFallback();
+    loadLocalDemoData();
   }
 }
 
-function loadFallback() {
+function loadLocalDemoData() {
   state.dashboard = {
     user: {name:'Айдар Бекторов',phone:'+996 700 123 456',health_score:72,monthly_focus:'Накопить на ноутбук'},
     accounts:[
@@ -2142,46 +2165,61 @@ async function callAI() {
 }
 
 function handleAIAction(act) {
+  if (!act || !act.action) return;
   if (act.action === 'transfer') {
     const lower = (act.contact||'').toLowerCase().split(' ')[0];
     const c = state.contacts.find(x => x.name.toLowerCase().includes(lower));
-    if (c) {
-      showAiConf(
-        `Перевести ${money(act.amount)} → ${c.name}?`,
-        `Тег: <b>${act.tag||'без тега'}</b>`,
-        async () => {
-          const res = await fetchJSON('/api/transfer', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contact_id:c.id,amount:act.amount,account_id:'main',tag:act.tag})});
-          const acc = state.dashboard?.accounts?.find(a=>a.id==='main');
-          if (acc) acc.balance = res.new_balance;
-          addAiMsg(`Перевёл **${money(act.amount)}** → ${c.name}\nОстаток: **${money(res.new_balance)}**`);
-          showFlash('Перевод выполнен', `${money(act.amount)} → ${c.name}`, 'info');
-          refreshFinancialViews();
-        }
-      );
-    } else if (!act.reply) {
-      addAiMsg(`Не нашёл контакт "${act.contact}". Напиши имя точнее.`);
-    }
+    if (!c) return addAiMsg(`Не нашёл контакт "${act.contact}". Напиши имя точнее.`);
+    showAiConf(`Перевести ${money(act.amount)} -> ${c.name}?`, `Тег: <b>${act.tag||'без тега'}</b>`, async () => {
+      const res = await fetchJSON('/api/transfer', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contact_id:c.id,amount:act.amount,account_id:'main',tag:act.tag})});
+      addAiMsg(`Перевёл **${money(act.amount)}** -> ${c.name}\nОстаток: **${money(res.new_balance)}**`);
+      refreshFinancialViews();
+    });
   } else if (act.action === 'bill') {
     const names={electric:'Электроэнергия',gas:'Газ',water:'Вода',kino:'Кинопоиск'};
-    showAiConf(
-      `Оплатить ${names[act.bill]||act.bill}?`,
-      `Сумма: <b>${money(act.amount)} с</b>`,
-      async () => {
-        const res = await fetchJSON('/api/pay-bill', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bill_id:act.bill,account_id:'main',tag:'service'})});
-        addAiMsg(res.message);
-        refreshFinancialViews();
-      }
-    );
+    showAiConf(`Оплатить ${names[act.bill]||act.bill}?`, `Сумма: <b>${money(act.amount)}</b>`, async () => {
+      const res = await fetchJSON('/api/pay-bill', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bill_id:act.bill,account_id:'main',tag:'service'})});
+      addAiMsg(res.message);
+      refreshFinancialViews();
+    });
   } else if (act.action === 'add_goal') {
-    showAiConf(
-      `Создать цель "${act.name}"?`,
-      `Сумма: <b>${money(act.target)}</b>`,
-      async () => {
-        const res = await fetchJSON('/api/goals/add', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:act.name,target:act.target})});
-        addAiMsg(`Цель "${act.name}" создана`);
-        refreshFinancialViews();
-      }
-    );
+    showAiConf(`Создать цель "${act.name}"?`, `Сумма: <b>${money(act.target)}</b>`, async () => {
+      await fetchJSON('/api/goals/add', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:act.name,target:act.target})});
+      addAiMsg(`Цель "${act.name}" создана.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'deposit_goal') {
+    showAiConf(`Пополнить цель #${act.goal_id}?`, `Сумма: <b>${money(act.amount)}</b>`, async () => {
+      await fetchJSON(`/api/goals/${act.goal_id}/deposit`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:act.amount})});
+      addAiMsg(`Готово. Цель пополнена на **${money(act.amount)}**.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'apply_plan') {
+    showAiConf('Применить план месяца?', 'Sezim закроет срочные счета, включит автоплатежи и отложит часть денег в накопления.', async () => {
+      closeAiPanel();
+      goScreen('screen-autopilot');
+      setTimeout(() => applyPlan(), 250);
+    });
+  } else if (act.action === 'offer') {
+    showAiConf('Применить предложение?', `Действие: <b>${act.offer_id}</b>`, async () => {
+      await applyOffer(act.offer_id);
+      addAiMsg('Готово. Я обновил рекомендации и состояние приложения.');
+    });
+  } else if (act.action === 'streak_checkin') {
+    showAiConf('Отметиться сегодня?', 'Sezim обновит серию финансовой дисциплины и начислит очки.', async () => {
+      const res = await fetchJSON('/api/gamification/streak-checkin', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+      addAiMsg(`Отметка принята. Серия: **${res.streak_days} дней**, очки: **+${res.points_earned}**.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'complete_mission') {
+    showAiConf('Забрать награду миссии?', `Миссия: <b>${act.mission_id}</b>`, async () => {
+      const res = await fetchJSON('/api/gamification/complete-mission', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:act.mission_id})});
+      addAiMsg(`Награда получена: **+${res.points_earned} очков**.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'open_screen' && act.screen) {
+    closeAiPanel();
+    goScreen(act.screen);
   }
 }
 
@@ -2209,6 +2247,14 @@ function cancelAiConf() {
    CHAT SCREEN (full screen)
 ════════════════════════════ */
 let chatHistory = [];
+function ensureChatIntro() {
+  if (chatHistory.length || $('chat-msgs').children.length) return;
+  const d = state.dashboard;
+  const mainBal = d?.accounts?.find(a=>a.id==='main')?.balance || 0;
+  const daily = d?.safe_to_spend?.daily_safe || 0;
+  appendChatMsg('ai', `Привет. Я Sezim AI.\nОсновной счёт: **${money(mainBal)}**\nБезопасный лимит: **${money(daily)}/день**\nМогу помочь с платежами, переводами, целями и контролем месяца.`);
+}
+
 function chatSendMsg() {
   const inp = $('chat-cin');
   const txt = inp.value.trim();
@@ -2313,6 +2359,12 @@ function initAiFabDrag() {
 }
 
 function handleChatAction(action) {
+  if (!['transfer','bill','add_goal'].includes(action.action)) {
+    openAiPanel();
+    setAiMode('chat');
+    handleAIAction(action);
+    return;
+  }
   if (action.action === 'transfer') {
     const c = state.contacts.find(x => x.name.toLowerCase().includes((action.contact||'').toLowerCase()));
     openTransferModal({contactId:c?.id||null, phone:c?.phone||'', amount:action.amount, tag:action.tag});
@@ -2329,8 +2381,18 @@ function handleChatAction(action) {
    INIT
 ════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
+  $('phone').dataset.screen = 'screen-home';
+  const riskNavLabel = document.querySelector('#ni-risk .ni-lbl');
+  if (riskNavLabel) riskNavLabel.textContent = 'Контроль';
+  const missionsNav = $('ni-missions');
+  if (missionsNav) {
+    missionsNav.onclick = () => goScreen('screen-missions');
+    const label = missionsNav.querySelector('.ni-lbl');
+    if (label) label.textContent = 'Привычки';
+  }
   applyTheme(state.theme);
   initAiFabDrag();
+  loadAIStatus();
   try {
     const [tagsData, contactsData] = await Promise.all([
       fetchJSON('/api/tags'),
@@ -2341,7 +2403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadDashboard();
     renderTransferContacts();
   } catch (e) {
-    loadFallback();
+    loadLocalDemoData();
   }
   setTimeout(() => showFlash('Зарплата получена', '65 000 с — открой автоплан для распределения.', 'info'), 3000);
 });

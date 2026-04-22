@@ -1,0 +1,7 @@
+__pycache__/
+.venv/
+.env
+*.pyc
+*.log
+mbank_state.sqlite3
+mbank_state.sqlite3-*

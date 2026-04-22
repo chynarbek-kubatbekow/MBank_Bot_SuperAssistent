@@ -9,22 +9,76 @@ from __future__ import annotations
 import json as _json
 import os
 import re
+import sqlite3
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import requests
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def load_local_env() -> None:
+    env_path = BASE_DIR / ".env"
+    if not env_path.exists():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ[key.strip().lstrip("\ufeff")] = value.strip().strip('"').strip("'")
+
+
+load_local_env()
+
+DATABASE_PATH = os.getenv("MBANK_DB_PATH", str(BASE_DIR / "mbank_state.sqlite3"))
+GROQ_API_KEY_RAW = os.getenv("GROQ_API_KEY", "").strip()
+GROQ_API_KEY = "" if GROQ_API_KEY_RAW.lower() in {"", "your_groq_key_here", "your_key_here"} else GROQ_API_KEY_RAW
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+ASSISTANT_NAME = "Sezim AI"
+ALLOWED_AI_ACTIONS = {
+    "transfer",
+    "bill",
+    "add_goal",
+    "deposit_goal",
+    "apply_plan",
+    "offer",
+    "streak_checkin",
+    "complete_mission",
+    "open_screen",
+}
+AI_CAPABILITIES_PROMPT = """
+Sezim AI has full app context and can prepare actions for every important MBANK demo workflow.
+Never execute state-changing operations directly in text. For money movement, bills, goals, missions,
+autopilot, or offers, explain briefly and return exactly one JSON action. The frontend will ask the user
+to confirm before execution.
+
+Allowed JSON actions:
+{"action":"transfer","contact":"Name","amount":1000,"tag":"family|debt|food|taxi|service|gift|travel|rent|health|shared|savings"}
+{"action":"bill","bill":"gas|electric|water|kino","amount":890}
+{"action":"add_goal","name":"Goal name","target":30000}
+{"action":"deposit_goal","goal_id":1,"amount":5000}
+{"action":"apply_plan"}
+{"action":"offer","offer_id":"reserve|autopay|savings_boost|travel_goal"}
+{"action":"streak_checkin"}
+{"action":"complete_mission","mission_id":"autopilot|budget_day|save_goal|autopay|tagged_transfer|streak_5"}
+{"action":"open_screen","screen":"screen-home|screen-autopilot|screen-risk|screen-missions|screen-goals|screen-history|screen-bills|screen-profile"}
+"""
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("MBANK_CORS_ORIGINS", "http://localhost:5000,http://127.0.0.1:5000").split(",")
+    if origin.strip()
+]
+
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS}})
 
 EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]+", re.UNICODE)
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "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")
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"
-ASSISTANT_NAME = "Sezim AI"
 
 
 def initial_db() -> dict[str, Any]:
@@ -124,8 +178,49 @@ def initial_db() -> dict[str, Any]:
         },
     }
 
+def _connect_state_db() -> sqlite3.Connection:
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS app_state (
+            key TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    return conn
 
-DB = initial_db()
+
+def save_state() -> None:
+    payload = _json.dumps(DB, ensure_ascii=False)
+    with _connect_state_db() as conn:
+        conn.execute(
+            """
+            INSERT INTO app_state (key, payload, updated_at)
+            VALUES ('main', ?, ?)
+            ON CONFLICT(key) DO UPDATE SET
+                payload = excluded.payload,
+                updated_at = excluded.updated_at
+            """,
+            (payload, datetime.now().isoformat(timespec="seconds")),
+        )
+
+
+def load_state() -> dict[str, Any]:
+    with _connect_state_db() as conn:
+        row = conn.execute("SELECT payload FROM app_state WHERE key = 'main'").fetchone()
+        if row:
+            try:
+                state = _json.loads(row[0])
+                if isinstance(state, dict):
+                    return state
+            except _json.JSONDecodeError:
+                pass
+    return initial_db()
+
+
+DB = load_state()
 
 ICON_TEXT_MAP = {
     "👨‍👩‍👧": "СМ",
@@ -215,6 +310,11 @@ def sanitize_json_response(response):
                 response.set_data(_json.dumps(sanitize_ui_payload(payload), ensure_ascii=False))
         except Exception:
             return response
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 500:
+        try:
+            save_state()
+        except Exception as error:
+            app.logger.warning("SQLite state save failed: %s", error)
     return response
 
 
@@ -861,6 +961,44 @@ def fallback_chat_response(message: str) -> tuple[str | None, dict[str, Any] | N
     lowered = message.lower()
     if is_sensitive_request(message):
         return safety_refusal(), None
+    money_text = lambda value: f"{int(round(value)):,}".replace(",", " ") + " с"
+    main = get_account("main") or {"balance": 0}
+    save = get_account("save") or {"balance": 0}
+    safe = compute_safe_to_spend()
+    if any(word in lowered for word in ("сколько", "баланс", "деньг", "остаток", "счёт", "счет")) and not any(word in lowered for word in ("оплат", "газ", "вода", "электр", "кино")):
+        return (
+            f"Сейчас на основном счёте {money_text(main['balance'])}, в накоплениях {money_text(save['balance'])}. "
+            f"Итого по счетам {money_text(total_balance())}. Безопасно тратить до конца месяца: {money_text(safe['safe_to_spend'])}, примерно {money_text(safe['daily_safe'])} в день.",
+            None,
+        )
+    if any(word in lowered for word in ("счета", "платеж", "платёж", "оплатить")):
+        due_bills = [bill for bill in DB["bills"] if bill["status"] in ("due", "overdue")]
+        if not due_bills:
+            return "Срочных счетов к оплате сейчас нет. Автоплатежи и план месяца уже держат обязательные расходы под контролем.", None
+        total_due = sum(bill["amount"] for bill in due_bills)
+        names = ", ".join(f"{bill['name']} {money_text(bill['amount'])}" for bill in due_bills[:3])
+        return f"К оплате {len(due_bills)} счёта на {money_text(total_due)}: {names}. Могу подготовить оплату, но выполню её только после твоего подтверждения.", None
+    if any(word in lowered for word in ("траты", "расход", "категор")):
+        categories = merchant_spending_by_category()
+        if not categories:
+            return "Пока нет расходов для анализа. Как только появятся операции, разложу их по категориям и тегам.", None
+        top_name, top_amount = max(categories.items(), key=lambda item: item[1])
+        return f"Главная категория расходов сейчас: {top_name} — {money_text(top_amount)}. Я бы держал её под недельным лимитом и помечал переводы тегами, чтобы прогноз был точнее.", None
+    if any(word in lowered for word in ("цели", "цель", "накопления", "коплю")):
+        goals = DB["goals"]
+        if goals:
+            top_goal = max(goals, key=lambda goal: goal["target"] - goal["saved"])
+            left = max(top_goal["target"] - top_goal["saved"], 0)
+            return f"Главная цель: {top_goal['name']}. Накоплено {money_text(top_goal['saved'])} из {money_text(top_goal['target'])}, осталось {money_text(left)}. Могу предложить безопасное пополнение из свободного остатка.", None
+        return "Целей пока нет. Могу создать новую цель и встроить её в план месяца после подтверждения.", {"action": "add_goal", "name": "Новая цель", "target": 30000}
+    if any(word in lowered for word in ("автоплан", "план месяца", "зарплат")):
+        return "Могу применить план месяца: закрыть срочные счета, включить автоплатежи и отложить часть зарплаты. Покажу подтверждение перед действием.", {"action": "apply_plan"}
+    if "автоплат" in lowered:
+        return "Могу включить автоплатежи для регулярных счетов. Это снизит риск просрочек.", {"action": "offer", "offer_id": "autopay"}
+    if "резерв" in lowered or "лимит" in lowered:
+        return "Могу активировать M+ резерв как страховку на случай кассового разрыва. Сначала нужно подтверждение.", {"action": "offer", "offer_id": "reserve"}
+    if "отмет" in lowered or "стрик" in lowered:
+        return "Могу отметить сегодняшний день и обновить серию финансовой дисциплины.", {"action": "streak_checkin"}
     if "перев" in lowered:
         amount_match = re.search(r"(\d{3,6})", lowered)
         contact = next((item for item in DB["contacts"] if item["name"].split()[0].lower() in lowered), None)
@@ -871,8 +1009,6 @@ def fallback_chat_response(message: str) -> tuple[str | None, dict[str, Any] | N
             )
     if "газ" in lowered:
         return "Газ можно оплатить сразу, это снимет один риск из радара.", {"action": "bill", "bill": "gas", "amount": 890}
-    if "цель" in lowered or "накоп" in lowered:
-        return "Могу сразу завести новую цель и включить её в следующий план месяца.", {"action": "add_goal", "name": "Новая цель", "target": 30000}
     offers = compute_smart_offers()
     if offers:
         return f"Сейчас лучший шаг — {offers[0]['title'].lower()}. {offers[0]['benefit']}", None
@@ -884,10 +1020,14 @@ def parse_action_from_reply(reply: str) -> tuple[str | None, dict[str, Any] | No
     action_result = None
     clean_reply = reply
     try:
-        json_match = re.search(r"\{[^{}]+\}", reply)
+        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", reply, re.DOTALL)
+        json_text = json_match.group(1) if json_match else None
+        if not json_text:
+            json_match = re.search(r"\{.*?\}", reply, re.DOTALL)
+            json_text = json_match.group(0) if json_match else None
         if json_match:
-            parsed = _json.loads(json_match.group())
-            if isinstance(parsed, dict) and parsed.get("action") in {"transfer", "bill", "add_goal"}:
+            parsed = _json.loads(json_text)
+            if isinstance(parsed, dict) and parsed.get("action") in ALLOWED_AI_ACTIONS:
                 action_result = parsed
                 clean_reply = (reply[: json_match.start()] + reply[json_match.end() :]).strip()
                 clean_reply = clean_reply.replace("```json", "").replace("```", "").strip() or None
@@ -1130,6 +1270,19 @@ def api_rates():
     return jsonify({"rates": [{"code": "USD", "buy": 87.30, "sell": 88.10, "flag": "🇺🇸"}, {"code": "EUR", "buy": 94.50, "sell": 95.80, "flag": "🇪🇺"}, {"code": "RUB", "buy": 0.96, "sell": 1.02, "flag": "🇷🇺"}, {"code": "KZT", "buy": 0.185, "sell": 0.195, "flag": "🇰🇿"}], "updated": datetime.now().strftime("%d.%m.%Y %H:%M")})
 
 
+@app.route("/api/ai-status")
+def api_ai_status():
+    online = bool(GROQ_API_KEY)
+    return jsonify(
+        {
+            "enabled": online,
+            "mode": "online" if online else "local",
+            "model": ASSISTANT_NAME,
+            "message": f"{ASSISTANT_NAME} онлайн" if online else f"{ASSISTANT_NAME} работает в локальном режиме",
+        }
+    )
+
+
 @app.route("/api/safe-to-spend")
 def api_safe_to_spend():
     return jsonify(compute_safe_to_spend())
@@ -1290,8 +1443,11 @@ def api_chat():
         DB["chat_history"].append({"role": "assistant", "content": reply or str(action)})
         _award_points(10, "Диалог")
         refresh_scores()
-        return jsonify({"ok": True, "reply": reply, "action": action, "fallback": True})
-    messages = [{"role": "system", "content": build_system_prompt()}]
+        return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
+    messages = [
+        {"role": "system", "content": build_system_prompt()},
+        {"role": "system", "content": AI_CAPABILITIES_PROMPT},
+    ]
     for item in history[-10:]:
         if item.get("role") in ("user", "assistant") and item.get("content"):
             messages.append({"role": item["role"], "content": str(item["content"])})
@@ -1299,12 +1455,14 @@ def api_chat():
     try:
         response = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}, json={"model": GROQ_MODEL, "messages": messages, "max_tokens": 600, "temperature": 0.7}, timeout=20)
         if response.status_code == 401:
-            return jsonify({"ok": False, "error": f"{ASSISTANT_NAME} временно недоступна из-за ошибки конфигурации."}), 401
+            reply, action = fallback_chat_response(user_message)
+            return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
         if response.status_code == 400:
-            detail = response.json().get("error", {}).get("message", response.text)
-            return jsonify({"ok": False, "error": f"{ASSISTANT_NAME} не смогла обработать запрос: {detail}"}), 400
+            reply, action = fallback_chat_response(user_message)
+            return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
         if response.status_code == 429:
-            return jsonify({"ok": False, "error": f"{ASSISTANT_NAME} временно перегружена. Попробуй ещё раз через минуту."}), 429
+            reply, action = fallback_chat_response(user_message)
+            return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
         response.raise_for_status()
         result = response.json()
         reply = result["choices"][0]["message"]["content"].strip()
@@ -1318,14 +1476,17 @@ def api_chat():
         DB["chat_history"].append({"role": "assistant", "content": reply or str(action)})
         _award_points(10, "Диалог")
         refresh_scores()
-        return jsonify({"ok": True, "reply": reply, "action": action, "fallback": True})
+        return jsonify({"ok": True, "reply": reply, "action": action, "local": True})
     except Exception as error:
         return jsonify({"ok": False, "error": f"Ошибка: {error}"}), 500
 
 
 if __name__ == "__main__":
+    debug_enabled = os.getenv("FLASK_DEBUG", "0").lower() in {"1", "true", "yes", "on"}
+    port = int(os.getenv("PORT", "5000"))
     print("=" * 60)
     print("  MBANK Stage 3 backend запущен")
-    print("  Открой: http://localhost:5000")
+    print(f"  Открой: http://localhost:{port}")
+    print(f"  SQLite: {DATABASE_PATH}")
     print("=" * 60)
-    app.run(debug=True, port=5000)
+    app.run(debug=debug_enabled, port=port)
