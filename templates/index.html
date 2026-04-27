@@ -394,7 +394,8 @@ body[data-theme="light"]{
 .mini-account-name{font-size:14px;font-weight:800;color:var(--text)}
 .mini-account-tag{font-size:10px;color:var(--text3);margin-top:4px}
 .mini-account-balance{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.4px;margin-top:10px}
-.mini-account-actions{display:flex;gap:8px;margin-top:12px}
+.mini-account-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.mini-account-actions .cta{flex:1 1 30%;padding:9px 10px;font-size:11px}
 .mini-account-empty{
   padding:16px;border-radius:18px;background:var(--bg3);border:1px dashed var(--border);
   color:var(--text2);font-size:12px;line-height:1.5;
@@ -1477,6 +1478,17 @@ function getMiniAccounts() {
   return (state.dashboard?.accounts || []).filter(a => a.kind === 'mini');
 }
 
+function resolveMiniAccountForAction(action={}) {
+  const accounts = getMiniAccounts();
+  if (action.account_id) {
+    const byId = accounts.find(account => account.id === action.account_id);
+    if (byId) return byId;
+  }
+  const label = String(action.label || '').toLowerCase();
+  if (label) return accounts.find(account => account.label.toLowerCase() === label) || null;
+  return null;
+}
+
 function getTagLinkedAccount(tagId) {
   return getMiniAccounts().find(account => account.tag_id === tagId) || null;
 }
@@ -1607,7 +1619,10 @@ function renderHome() {
           <div class="mini-account-balance">${money(account.balance)}</div>
           <div class="mini-account-actions">
             <button class="cta ghost" onclick="topupMiniAccountPrompt('${account.id}','${String(account.label).replace(/'/g, '&#39;')}')">Пополнить</button>
+            <button class="cta ghost" onclick="withdrawMiniAccountPrompt('${account.id}','${String(account.label).replace(/'/g, '&#39;')}')">Вернуть</button>
             <button class="cta ghost" onclick="openTransferModal({tag:'${account.tag_id || ''}',accountId:'${account.id}'})">Потратить</button>
+            <button class="cta ghost" onclick="renameMiniAccountPrompt('${account.id}','${String(account.label).replace(/'/g, '&#39;')}')">Переим.</button>
+            <button class="cta danger" onclick="closeMiniAccountConfirm('${account.id}','${String(account.label).replace(/'/g, '&#39;')}')">Закрыть</button>
           </div>
         </div>`;
       }).join('')
@@ -2471,6 +2486,59 @@ async function topupMiniAccountPrompt(accountId, label) {
   }
 }
 
+async function withdrawMiniAccountPrompt(accountId, label) {
+  const raw = window.prompt(`Сколько вернуть из «${label}» на основной счёт?`);
+  if (raw === null) return;
+  const amount = parseInt(String(raw).trim(), 10);
+  if (!amount || amount <= 0) {
+    showToast('Укажи сумму больше 0');
+    return;
+  }
+  try {
+    const result = await fetchJSON(`/api/mini-accounts/${accountId}/withdraw`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({amount})
+    });
+    showToast(result.message);
+    await refreshFinancialViews();
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+
+async function renameMiniAccountPrompt(accountId, label) {
+  const nextLabel = window.prompt('Новое название мини-счёта', label);
+  if (nextLabel === null) return;
+  const cleanLabel = nextLabel.trim();
+  if (cleanLabel.length < 2) {
+    showToast('Название должно быть не короче 2 символов');
+    return;
+  }
+  try {
+    const result = await fetchJSON(`/api/mini-accounts/${accountId}`, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({label: cleanLabel})
+    });
+    showToast(result.message);
+    await refreshFinancialViews();
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+
+async function closeMiniAccountConfirm(accountId, label) {
+  if (!window.confirm(`Закрыть мини-счёт «${label}» и вернуть остаток на основной?`)) return;
+  try {
+    const result = await fetchJSON(`/api/mini-accounts/${accountId}`, {method:'DELETE'});
+    showToast(result.message);
+    await refreshFinancialViews();
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+
 /* ════════════════════════════
    SUCCESS OVERLAY
 ════════════════════════════ */
@@ -2676,6 +2744,61 @@ function handleAIAction(act) {
     showAiConf(`Пополнить цель #${act.goal_id}?`, `Сумма: <b>${money(act.amount)}</b>`, async () => {
       await fetchJSON(`/api/goals/${act.goal_id}/deposit`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:act.amount})});
       addAiMsg(`Готово. Цель пополнена на **${money(act.amount)}**.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'create_tag') {
+    showAiConf(`Создать тег "${act.label}"?`, 'Он появится в переводах, платежах и мини-счетах.', async () => {
+      const res = await fetchJSON('/api/tags', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label:act.label})});
+      upsertTag(res.tag);
+      addAiMsg(res.message);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'create_mini_account') {
+    showAiConf(`Создать мини-счёт "${act.label}"?`, `Стартовая сумма: <b>${money(act.amount)}</b>`, async () => {
+      const res = await fetchJSON('/api/mini-accounts', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label:act.label,amount:act.amount,tag:act.tag,custom_tag:act.custom_tag})});
+      upsertTag(res.tag);
+      addAiMsg(`${res.message}.\nОстаток основного: **${money(res.main_balance)}**.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'topup_mini_account') {
+    const account = resolveMiniAccountForAction(act);
+    if (!account) return addAiMsg('Не нашёл этот мини-счёт. Напиши название точнее.');
+    showAiConf(`Пополнить "${account.label}"?`, `Сумма: <b>${money(act.amount)}</b>`, async () => {
+      const res = await fetchJSON(`/api/mini-accounts/${account.id}/topup`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:act.amount})});
+      addAiMsg(`${res.message}.\nБаланс мини-счёта: **${money(res.account.balance)}**.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'withdraw_mini_account') {
+    const account = resolveMiniAccountForAction(act);
+    if (!account) return addAiMsg('Не нашёл этот мини-счёт. Напиши название точнее.');
+    showAiConf(`Вернуть из "${account.label}"?`, `Сумма: <b>${money(act.amount)}</b>`, async () => {
+      const res = await fetchJSON(`/api/mini-accounts/${account.id}/withdraw`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:act.amount})});
+      addAiMsg(`${res.message}.\nОсновной счёт: **${money(res.main_balance)}**.`);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'close_mini_account') {
+    const account = resolveMiniAccountForAction(act);
+    if (!account) return addAiMsg('Не нашёл этот мини-счёт. Напиши название точнее.');
+    showAiConf(`Закрыть "${account.label}"?`, `Остаток <b>${money(account.balance)}</b> вернётся на основной счёт.`, async () => {
+      const res = await fetchJSON(`/api/mini-accounts/${account.id}`, {method:'DELETE'});
+      addAiMsg(res.message);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'rename_mini_account') {
+    const account = resolveMiniAccountForAction(act);
+    if (!account) return addAiMsg('Не нашёл этот мини-счёт. Напиши название точнее.');
+    showAiConf(`Переименовать "${account.label}"?`, `Новое название: <b>${act.new_label}</b>`, async () => {
+      const res = await fetchJSON(`/api/mini-accounts/${account.id}`, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({label:act.new_label})});
+      addAiMsg(res.message);
+      refreshFinancialViews();
+    });
+  } else if (act.action === 'link_mini_account_tag') {
+    const account = resolveMiniAccountForAction(act);
+    if (!account) return addAiMsg('Не нашёл этот мини-счёт. Напиши название точнее.');
+    showAiConf(`Обновить тег "${account.label}"?`, `Тег: <b>${act.custom_tag || act.tag || 'без тега'}</b>`, async () => {
+      const res = await fetchJSON(`/api/mini-accounts/${account.id}`, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({tag:act.tag,custom_tag:act.custom_tag})});
+      upsertTag(res.tag);
+      addAiMsg(res.message);
       refreshFinancialViews();
     });
   } else if (act.action === 'apply_plan') {

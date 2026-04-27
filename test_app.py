@@ -242,6 +242,118 @@ class MbankAppTests(unittest.TestCase):
         self.assertEqual(mod.get_account("main")["balance"], main_before)
         self.assertEqual(mod.get_account(linked_account["id"])["balance"], mini_before - 1240)
 
+    def test_mini_account_withdraw_update_and_close_return_money(self):
+        main_before = mod.get_account("main")["balance"]
+        created = self.client.post(
+            "/api/mini-accounts",
+            json={"label": "Lunch", "amount": 2000, "custom_tag": "Lunch"},
+        ).get_json()
+        account_id = created["account"]["id"]
+
+        renamed = self.client.patch(
+            f"/api/mini-accounts/{account_id}",
+            json={"label": "Work lunch", "custom_tag": "Office food"},
+        )
+        withdraw = self.client.post(
+            f"/api/mini-accounts/{account_id}/withdraw",
+            json={"amount": 750},
+        )
+        closed = self.client.delete(f"/api/mini-accounts/{account_id}")
+
+        self.assertEqual(renamed.status_code, 200)
+        self.assertEqual(renamed.get_json()["account"]["label"], "Work lunch")
+        self.assertEqual(withdraw.status_code, 200)
+        self.assertEqual(withdraw.get_json()["account"]["balance"], 1250)
+        self.assertEqual(closed.status_code, 200)
+        self.assertIsNone(mod.get_account(account_id))
+        self.assertEqual(mod.get_account("main")["balance"], main_before)
+
+    def test_ai_fallback_can_prepare_mini_account_actions(self):
+        create_reply, create_action = mod.fallback_chat_response("Создай мини-счёт Обед на 1500")
+        self.assertEqual(create_action["action"], "create_mini_account")
+        self.assertEqual(create_action["label"], "Обед")
+        self.assertEqual(create_action["amount"], 1500)
+        self.assertIn("мини", create_reply.lower())
+
+        created = self.client.post(
+            "/api/mini-accounts",
+            json={"label": "Обед", "amount": 1500, "custom_tag": "Обед"},
+        ).get_json()
+
+        topup_reply, topup_action = mod.fallback_chat_response("Пополни мини-счёт Обед на 500")
+        withdraw_reply, withdraw_action = mod.fallback_chat_response("Верни из мини-счёта Обед 300")
+        close_reply, close_action = mod.fallback_chat_response("Закрой мини-счёт Обед")
+
+        self.assertEqual(topup_action["action"], "topup_mini_account")
+        self.assertEqual(topup_action["account_id"], created["account"]["id"])
+        self.assertEqual(topup_action["amount"], 500)
+        self.assertIn("пополн", topup_reply.lower())
+        self.assertEqual(withdraw_action["action"], "withdraw_mini_account")
+        self.assertEqual(withdraw_action["amount"], 300)
+        self.assertIn("возврат", withdraw_reply.lower())
+        self.assertEqual(close_action["action"], "close_mini_account")
+        self.assertIn("закрыть", close_reply.lower())
+
+    def test_sezim_chat_endpoint_fallback_prepares_mini_account_lifecycle(self):
+        with patch.object(mod, "GROQ_API_KEY", ""):
+            create = self.client.post(
+                "/api/chat",
+                json={"message": "Создай мини-счёт Обед на 1500"},
+            ).get_json()
+
+        self.assertTrue(create["ok"])
+        self.assertTrue(create["local"])
+        self.assertEqual(create["fallback_reason"], "missing_groq_api_key")
+        self.assertEqual(create["action"]["action"], "create_mini_account")
+        self.assertEqual(create["action"]["label"], "Обед")
+        self.assertEqual(create["action"]["amount"], 1500)
+
+        created = self.client.post(
+            "/api/mini-accounts",
+            json={"label": "Обед", "amount": 1500, "custom_tag": "Обед"},
+        ).get_json()
+        account_id = created["account"]["id"]
+
+        with patch.object(mod, "GROQ_API_KEY", ""):
+            topup = self.client.post(
+                "/api/chat",
+                json={"message": "Пополни мини-счёт Обед на 500"},
+            ).get_json()
+            withdraw = self.client.post(
+                "/api/chat",
+                json={"message": "Верни из мини-счёта Обед 300"},
+            ).get_json()
+            close = self.client.post(
+                "/api/chat",
+                json={"message": "Закрой мини-счёт Обед"},
+            ).get_json()
+
+        self.assertEqual(topup["action"]["action"], "topup_mini_account")
+        self.assertEqual(topup["action"]["account_id"], account_id)
+        self.assertEqual(topup["action"]["amount"], 500)
+        self.assertEqual(withdraw["action"]["action"], "withdraw_mini_account")
+        self.assertEqual(withdraw["action"]["account_id"], account_id)
+        self.assertEqual(withdraw["action"]["amount"], 300)
+        self.assertEqual(close["action"]["action"], "close_mini_account")
+        self.assertEqual(close["action"]["account_id"], account_id)
+
+    def test_sezim_parser_accepts_new_management_actions_from_online_model(self):
+        cases = [
+            ('Создам тег.\n{"action":"create_tag","label":"Дом"}', "create_tag"),
+            ('Создам мини-счёт.\n{"action":"create_mini_account","label":"Дом","amount":2000,"custom_tag":"Дом"}', "create_mini_account"),
+            ('Пополню мини-счёт.\n{"action":"topup_mini_account","account_id":"mini-1","amount":700}', "topup_mini_account"),
+            ('Верну на основной.\n{"action":"withdraw_mini_account","account_id":"mini-1","amount":400}', "withdraw_mini_account"),
+            ('Закрою после подтверждения.\n{"action":"close_mini_account","account_id":"mini-1"}', "close_mini_account"),
+            ('Переименую.\n{"action":"rename_mini_account","account_id":"mini-1","new_label":"Такси"}', "rename_mini_account"),
+            ('Привяжу тег.\n{"action":"link_mini_account_tag","account_id":"mini-1","tag":"taxi"}', "link_mini_account_tag"),
+        ]
+
+        for reply, expected_action in cases:
+            with self.subTest(expected_action=expected_action):
+                clean_reply, action = mod.parse_action_from_reply(reply)
+                self.assertIsNotNone(clean_reply)
+                self.assertEqual(action["action"], expected_action)
+
     def test_transfer_analytics_question_stays_in_advice_mode(self):
         reply, action = mod.fallback_chat_response("Покажи аналитику переводов за месяц")
 

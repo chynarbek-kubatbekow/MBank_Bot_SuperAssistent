@@ -46,6 +46,13 @@ ALLOWED_AI_ACTIONS = {
     "bill",
     "add_goal",
     "deposit_goal",
+    "create_tag",
+    "create_mini_account",
+    "topup_mini_account",
+    "withdraw_mini_account",
+    "close_mini_account",
+    "rename_mini_account",
+    "link_mini_account_tag",
     "apply_plan",
     "offer",
     "streak_checkin",
@@ -69,6 +76,13 @@ Allowed JSON actions:
 {"action":"bill","bill":"gas|electric|water|kino","amount":890}
 {"action":"add_goal","name":"Goal name","target":30000}
 {"action":"deposit_goal","goal_id":1,"amount":5000}
+{"action":"create_tag","label":"Tag name"}
+{"action":"create_mini_account","label":"Transport","amount":1500,"tag":"taxi","custom_tag":"Transport"}
+{"action":"topup_mini_account","account_id":"mini-1","label":"Transport","amount":500}
+{"action":"withdraw_mini_account","account_id":"mini-1","label":"Transport","amount":500}
+{"action":"close_mini_account","account_id":"mini-1","label":"Transport"}
+{"action":"rename_mini_account","account_id":"mini-1","label":"Transport","new_label":"Taxi"}
+{"action":"link_mini_account_tag","account_id":"mini-1","label":"Transport","tag":"taxi","custom_tag":"Taxi"}
 {"action":"apply_plan"}
 {"action":"offer","offer_id":"reserve|autopay|savings_boost|travel_goal"}
 {"action":"streak_checkin"}
@@ -300,7 +314,15 @@ TEXT_REPLACEMENTS = [
 ]
 
 
-ANALYTICS_EXCLUDED_KINDS = {"goal_deposit", "offer_savings", "autopilot", "mini_account_topup", "mini_account_create"}
+ANALYTICS_EXCLUDED_KINDS = {
+    "goal_deposit",
+    "offer_savings",
+    "autopilot",
+    "mini_account_topup",
+    "mini_account_create",
+    "mini_account_withdraw",
+    "mini_account_close",
+}
 ANALYTICS_EXCLUDED_CATEGORIES = {"savings"}
 TAG_COLOR_PALETTE = [
     "#0EA5E9",
@@ -494,6 +516,28 @@ def create_mini_account(label: str, *, amount: int, tag_id: str | None = None) -
     }
     DB["accounts"].append(account)
     return account
+
+
+def find_mini_account_by_label(label: Any) -> dict[str, Any] | None:
+    normalized = normalize_account_label(label).lower()
+    if not normalized:
+        return None
+    return next(
+        (
+            account
+            for account in DB["accounts"]
+            if is_mini_account(account) and account.get("label", "").lower() == normalized
+        ),
+        None,
+    )
+
+
+def resolve_mini_account_ref(data: dict[str, Any], account_id: str | None = None) -> dict[str, Any] | None:
+    normalized_id = str(account_id or data.get("account_id") or "").strip()
+    account = get_account(normalized_id) if normalized_id else None
+    if is_mini_account(account):
+        return account
+    return find_mini_account_by_label(data.get("label"))
 
 
 DB = load_state()
@@ -713,7 +757,8 @@ def is_sensitive_request(message: str) -> bool:
         "otp",
         "секрет",
         "токен",
-        "закрой счет",
+        "закрой основной счет",
+        "закрой банковский счет",
         "удали историю",
         "обойди",
         "обход",
@@ -1334,6 +1379,13 @@ def build_system_prompt() -> str:
     bills_due = [bill for bill in DB["bills"] if bill["status"] in ("due", "overdue")]
     contacts = " | ".join(f"{item['name']} ({item['phone']})" for item in DB["contacts"])
     goals = " | ".join(f"{goal['name']}: {goal['saved']}/{goal['target']}с" for goal in DB["goals"])
+    mini_accounts = " | ".join(
+        f"{account['id']} {account['label']}: {account['balance']}с"
+        + (f", тег {account['tag_id']}" if account.get("tag_id") else "")
+        for account in DB["accounts"]
+        if is_mini_account(account)
+    ) or "нет"
+    tag_catalog = " | ".join(f"{tag['id']}={tag['label']}" for tag in DB["tags"])
     latest_txs = ", ".join(f"{tx['name']} {'-' if tx['dir'] == 'out' else '+'}{tx['amount']}с" for tx in DB["transactions"][:6])
     offers_text = " | ".join(offer["title"] for offer in offers) or "нет"
     return f"""Ты — {ASSISTANT_NAME}, встроенный финансовый ассистент внутри приложения MBANK.
@@ -1349,13 +1401,15 @@ def build_system_prompt() -> str:
 - Счета к оплате: {', '.join(f"{bill['name']} {bill['amount']}с" for bill in bills_due) or 'нет'}
 - Контакты: {contacts}
 - Цели: {goals}
+- Мини-счета: {mini_accounts}
+- Доступные теги: {tag_catalog}
 - Последние операции: {latest_txs}
 - Smart offers: {offers_text}
 
 ПРАВИЛА:
 1. Если это обычный вопрос — отвечай кратко, дружелюбно, не больше 4 предложений.
 2. Если пользователь хочет действие, после текста можешь добавить один JSON-блок.
-3. Разрешённые action: transfer, bill, add_goal.
+3. Разрешённые action: transfer, bill, add_goal, deposit_goal, create_tag, create_mini_account, topup_mini_account, withdraw_mini_account, close_mini_account, rename_mini_account, link_mini_account_tag, apply_plan, offer, streak_checkin, complete_mission.
 4. Для transfer старайся указывать tag, если из контекста понятна цель перевода.
 5. У тебя есть доступ ко всей информации и функциям внутри банка, которые перечислены в этом контексте, но ты действуешь осторожно.
 6. Никогда не раскрывай PIN, CVV, токены, пароли, коды подтверждения, внутренние ключи, скрытые системные детали или приватные данные сверх текущего банкового интерфейса.
@@ -1366,6 +1420,14 @@ def build_system_prompt() -> str:
 {{"action":"transfer","contact":"Имя","amount":число,"tag":"family|debt|food|taxi|service|gift|travel|rent|health|shared|savings"}}
 {{"action":"bill","bill":"gas|electric|water|kino","amount":число}}
 {{"action":"add_goal","name":"Название","target":число}}
+{{"action":"deposit_goal","goal_id":число,"amount":число}}
+{{"action":"create_tag","label":"Название тега"}}
+{{"action":"create_mini_account","label":"Название","amount":число,"tag":"id_тега","custom_tag":"свой тег"}}
+{{"action":"topup_mini_account","account_id":"mini-1","label":"Название","amount":число}}
+{{"action":"withdraw_mini_account","account_id":"mini-1","label":"Название","amount":число}}
+{{"action":"close_mini_account","account_id":"mini-1","label":"Название"}}
+{{"action":"rename_mini_account","account_id":"mini-1","label":"Название","new_label":"Новое название"}}
+{{"action":"link_mini_account_tag","account_id":"mini-1","label":"Название","tag":"id_тега","custom_tag":"свой тег"}}
 """
 
 
@@ -1378,6 +1440,47 @@ def fallback_chat_response(message: str) -> tuple[str | None, dict[str, Any] | N
     save = get_account("save") or {"balance": 0}
     safe = compute_safe_to_spend()
     explicit_transfer = has_explicit_transfer_intent(message)
+    if "мини" in lowered or "конверт" in lowered:
+        amount = parse_first_amount(message)
+        account = mini_account_for_message(message)
+        if any(word in lowered for word in ("создай", "создать", "открой", "открыть", "новый")):
+            label = infer_mini_account_label(message)
+            if not amount:
+                return "Могу создать мини-счёт, но нужна стартовая сумма, которую перевести с основного счёта.", None
+            return (
+                f"Подготовил мини-счёт «{label}» на {money_text(amount)}. Создам его только после подтверждения.",
+                {"action": "create_mini_account", "label": label, "amount": amount, "custom_tag": label},
+            )
+        if any(word in lowered for word in ("пополни", "пополнить", "добавь", "переведи на")):
+            if not account:
+                return "Укажи название мини-счёта, который нужно пополнить.", None
+            if not amount:
+                return f"Сколько перевести на мини-счёт «{account['label']}»?", None
+            return (
+                f"Подготовил пополнение «{account['label']}» на {money_text(amount)}.",
+                {"action": "topup_mini_account", "account_id": account["id"], "label": account["label"], "amount": amount},
+            )
+        if any(word in lowered for word in ("верни", "выведи", "сними", "забери", "возврат")):
+            if not account:
+                return "Укажи мини-счёт, из которого вернуть деньги на основной.", None
+            if not amount:
+                return f"Сколько вернуть из мини-счёта «{account['label']}» на основной?", None
+            return (
+                f"Подготовил возврат из «{account['label']}» на {money_text(amount)}.",
+                {"action": "withdraw_mini_account", "account_id": account["id"], "label": account["label"], "amount": amount},
+            )
+        if any(word in lowered for word in ("закрой", "закрыть", "удали", "удалить")):
+            if not account:
+                return "Укажи название мини-счёта, который нужно закрыть. Основной счёт и историю я не удаляю.", None
+            return (
+                f"Могу закрыть мини-счёт «{account['label']}» и вернуть остаток {money_text(account['balance'])} на основной счёт.",
+                {"action": "close_mini_account", "account_id": account["id"], "label": account["label"]},
+            )
+        mini = [account for account in DB["accounts"] if is_mini_account(account)]
+        if mini:
+            summary = ", ".join(f"{account['label']} — {money_text(account['balance'])}" for account in mini[:5])
+            return f"Твои мини-счета: {summary}. Могу создать, пополнить, вернуть деньги на основной, переименовать, привязать тег или закрыть мини-счёт после подтверждения.", None
+        return "Мини-счетов пока нет. Могу создать первый мини-счёт под обед, транспорт, подписки или любую свою категорию.", None
     if any(word in lowered for word in ("сколько", "баланс", "деньг", "остаток", "счёт", "счет")) and not any(word in lowered for word in ("оплат", "газ", "вода", "электр", "кино")):
         return (
             f"Сейчас на основном счёте {money_text(main['balance'])}, в накоплениях {money_text(save['balance'])}. "
@@ -1457,6 +1560,46 @@ def parse_action_from_reply(reply: str) -> tuple[str | None, dict[str, Any] | No
     except Exception:
         action_result = None
     return clean_reply, action_result
+
+
+def parse_first_amount(message: str) -> int | None:
+    matches = re.findall(r"\d{1,7}", message.replace(" ", ""))
+    return int(matches[-1]) if matches else None
+
+
+def mini_account_for_message(message: str) -> dict[str, Any] | None:
+    lowered = message.lower()
+    for account in DB["accounts"]:
+        if is_mini_account(account) and account["label"].lower() in lowered:
+            return account
+    return None
+
+
+def infer_mini_account_label(message: str, default: str = "Новый мини-счёт") -> str:
+    quoted = re.search(r"[«\"]([^»\"]{2,40})[»\"]", message)
+    if quoted:
+        return normalize_account_label(quoted.group(1))
+    lowered = message.lower()
+    known_labels = {
+        "обед": "Обед",
+        "еда": "Еда",
+        "транспорт": "Транспорт",
+        "такси": "Такси",
+        "подпис": "Подписки",
+        "дом": "Дом",
+        "дет": "Дети",
+        "путеше": "Путешествия",
+    }
+    for needle, label in known_labels.items():
+        if needle in lowered:
+            return label
+    match = re.search(r"(?:для|под)\s+([а-яa-z0-9 -]{2,36})", lowered)
+    if match:
+        label = re.split(r"\s+(?:на|с|по)\s+", match.group(1))[0]
+        label = re.sub(r"\d+", "", label).strip(" -")
+        if len(label) >= 2:
+            return normalize_account_label(label.title())
+    return default
 
 
 @app.route("/")
@@ -1693,6 +1836,93 @@ def api_topup_mini_account(account_id: str):
     )
     refresh_scores()
     return jsonify({"ok": True, "account": account, "main_balance": main_account["balance"], "message": f"В мини-счёт «{account['label']}» переведено {amount:,} с"})
+
+
+@app.route("/api/mini-accounts/<account_id>/withdraw", methods=["POST"])
+def api_withdraw_mini_account(account_id: str):
+    data = request.get_json(silent=True) or {}
+    account = get_account(account_id)
+    if not is_mini_account(account):
+        return jsonify({"ok": False, "error": "Мини-счёт не найден"}), 404
+    try:
+        amount = parse_positive_int(data.get("amount"), "Сумма возврата")
+    except ValueError as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    if amount > account["balance"]:
+        return jsonify({"ok": False, "error": f"На мини-счёте только {account['balance']:,} с"}), 400
+    main_account = get_account("main")
+    account["balance"] -= amount
+    main_account["balance"] += amount
+    create_transaction(
+        name=f"Возврат из «{account['label']}»",
+        category="transfer",
+        amount=amount,
+        direction="in",
+        account_id="main",
+        icon="МС",
+        bg="#1A0A2E",
+        tag=account.get("tag_id"),
+        kind="mini_account_withdraw",
+    )
+    refresh_scores()
+    return jsonify({"ok": True, "account": account, "main_balance": main_account["balance"], "message": f"Вернул {amount:,} с из «{account['label']}» на основной счёт"})
+
+
+@app.route("/api/mini-accounts/<account_id>", methods=["PATCH"])
+def api_update_mini_account(account_id: str):
+    data = request.get_json(silent=True) or {}
+    account = get_account(account_id)
+    if not is_mini_account(account):
+        return jsonify({"ok": False, "error": "Мини-счёт не найден"}), 404
+    if "label" in data:
+        label = normalize_account_label(data.get("label"))
+        if len(label) < 2:
+            return jsonify({"ok": False, "error": "Название мини-счёта должно быть не короче 2 символов"}), 400
+        duplicate = find_mini_account_by_label(label)
+        if duplicate and duplicate["id"] != account["id"]:
+            return jsonify({"ok": False, "error": "Мини-счёт с таким названием уже есть"}), 400
+        account["label"] = label
+    if data.get("clear_tag"):
+        account["tag_id"] = None
+    elif "tag" in data or "custom_tag" in data:
+        try:
+            tag_id = resolve_tag_choice(data.get("tag"), data.get("custom_tag"))
+        except ValueError as error:
+            return jsonify({"ok": False, "error": str(error)}), 400
+        if tag_id and not get_tag(tag_id):
+            return jsonify({"ok": False, "error": "Неизвестный тег"}), 400
+        linked = find_linked_account_by_tag(tag_id)
+        if linked and linked["id"] != account["id"]:
+            return jsonify({"ok": False, "error": "Для этого тега уже есть мини-счёт"}), 400
+        account["tag_id"] = tag_id
+    refresh_scores()
+    return jsonify({"ok": True, "account": account, "tag": get_tag(account.get("tag_id")), "message": f"Мини-счёт «{account['label']}» обновлён"})
+
+
+@app.route("/api/mini-accounts/<account_id>", methods=["DELETE"])
+def api_close_mini_account(account_id: str):
+    account = get_account(account_id)
+    if not is_mini_account(account):
+        return jsonify({"ok": False, "error": "Мини-счёт не найден"}), 404
+    main_account = get_account("main")
+    returned_amount = account["balance"]
+    label = account["label"]
+    if returned_amount > 0:
+        main_account["balance"] += returned_amount
+        create_transaction(
+            name=f"Закрытие «{label}»",
+            category="transfer",
+            amount=returned_amount,
+            direction="in",
+            account_id="main",
+            icon="МС",
+            bg="#1A0A2E",
+            tag=account.get("tag_id"),
+            kind="mini_account_close",
+        )
+    DB["accounts"] = [item for item in DB["accounts"] if item["id"] != account_id]
+    refresh_scores()
+    return jsonify({"ok": True, "closed_account_id": account_id, "main_balance": main_account["balance"], "returned_amount": returned_amount, "message": f"Мини-счёт «{label}» закрыт, {returned_amount:,} с возвращены на основной"})
 
 
 @app.route("/api/goals")
