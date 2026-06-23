@@ -39,7 +39,8 @@ DATABASE_PATH = os.getenv("MBANK_DB_PATH", str(BASE_DIR / "mbank_state.sqlite3")
 GROQ_API_KEY_RAW = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_API_KEY = "" if GROQ_API_KEY_RAW.lower() in {"", "your_groq_key_here", "your_key_here"} else GROQ_API_KEY_RAW
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "groq/compound")
+GROQ_TIMEOUT_SECONDS = float(os.getenv("GROQ_TIMEOUT_SECONDS", "20"))
 ASSISTANT_NAME = "Sezim AI"
 ALLOWED_AI_ACTIONS = {
     "transfer",
@@ -72,7 +73,7 @@ Never switch screens, redirect the user, or decide navigation for them. If anoth
 mention it in plain text and let the user open it manually.
 
 Allowed JSON actions:
-{"action":"transfer","contact":"Name","amount":1000,"tag":"family|debt|food|taxi|service|gift|travel|rent|health|shared|savings"}
+{"action":"transfer","contact_id":3,"contact":"Name","amount":1000,"tag":"family|debt|food|taxi|service|gift|travel|rent|health|shared|savings"}
 {"action":"bill","bill":"gas|electric|water|kino","amount":890}
 {"action":"add_goal","name":"Goal name","target":30000}
 {"action":"deposit_goal","goal_id":1,"amount":5000}
@@ -2058,6 +2059,190 @@ def chat_fallback_payload(user_message: str, reason: str, provider_status: int |
     return jsonify(payload)
 
 
+def groq_fallback_reason(status_code: int, error_code: str | None = None, error_message: str | None = None) -> str | None:
+    if 200 <= status_code < 300:
+        return None
+    if error_code == "model_permission_blocked_project" or (error_message and "blocked" in error_message.lower()):
+        return "groq_model_blocked"
+    if status_code in (401, 403):
+        return "groq_auth_failed"
+    if status_code in (400, 404, 422):
+        return "groq_bad_request"
+    if status_code == 429:
+        return "groq_rate_limited"
+    if 500 <= status_code:
+        return "groq_provider_error"
+    return "groq_request_failed"
+
+
+CONTACT_ALIASES = {
+    "адиль": {"id": 1, "name": "Адиль Сейткали", "tag": "shared"},
+    "адил": {"id": 1, "name": "Адиль Сейткали", "tag": "shared"},
+    "марат": {"id": 2, "name": "Марат Джакыпов", "tag": "debt"},
+    "айгуль": {"id": 3, "name": "Айгуль Токтосунова", "tag": "family"},
+    "айгул": {"id": 3, "name": "Айгуль Токтосунова", "tag": "family"},
+    "бакыт": {"id": 4, "name": "Бакыт Осмонов", "tag": "gift"},
+    "нурия": {"id": 5, "name": "Нурия Асанова", "tag": "family"},
+    "чингиз": {"id": 6, "name": "Чингиз Бердиев", "tag": "travel"},
+}
+
+BILL_ALIASES = {
+    "газ": "gas",
+    "свет": "electric",
+    "элект": "electric",
+    "вода": "water",
+    "кино": "kino",
+    "кинопоиск": "kino",
+}
+
+
+def parse_amount_from_text(message: str) -> int | None:
+    matches = re.findall(r"\d[\d\s]{0,12}", message)
+    values = [int(match.replace(" ", "")) for match in matches if match.replace(" ", "").isdigit()]
+    return values[-1] if values else None
+
+
+def title_from_label(label: str, default: str) -> str:
+    cleaned = re.sub(r"\s+", " ", label).strip(" .,-:;\"'«»")
+    return cleaned[:40].strip().capitalize() if cleaned else default
+
+
+def infer_direct_label(message: str, default: str = "Новый счёт") -> str:
+    quoted = re.search(r"[«\"]([^»\"]{2,40})[»\"]", message)
+    if quoted:
+        return title_from_label(quoted.group(1), default)
+    lowered = message.lower()
+    known = {
+        "обед": "Обед",
+        "еда": "Еда",
+        "транспорт": "Транспорт",
+        "такси": "Такси",
+        "подпис": "Подписки",
+        "дом": "Дом",
+        "дет": "Дети",
+        "путеше": "Путешествия",
+        "ноутбук": "Ноутбук",
+    }
+    for needle, label in known.items():
+        if needle in lowered:
+            return label
+    match = re.search(r"(?:мини[-\s]?сч[её]т|сч[её]т|цель)\s+(.+?)(?:\s+на\s+\d|$)", message, re.IGNORECASE)
+    if match:
+        label = re.sub(r"\d+", "", match.group(1))
+        return title_from_label(label, default)
+    return default
+
+
+def find_direct_mini_account(message: str) -> dict[str, Any] | None:
+    lowered = message.lower()
+    for account in DB["accounts"]:
+        if is_mini_account(account) and account.get("label", "").lower() in lowered:
+            return account
+    return None
+
+
+def direct_chat_action(message: str) -> tuple[str | None, dict[str, Any] | None]:
+    lowered = message.lower()
+    amount = parse_amount_from_text(message)
+
+    if "мини" in lowered or "конверт" in lowered:
+        if any(word in lowered for word in ("создай", "создать", "открой", "открыть", "новый")):
+            if not amount:
+                return "Укажи стартовую сумму для мини-счёта.", None
+            label = infer_direct_label(message, "Новый мини-счёт")
+            return (
+                f"Подготовил мини-счёт «{label}» на {amount} сом. Выполню только после подтверждения.",
+                {"action": "create_mini_account", "label": label, "amount": amount, "custom_tag": label},
+            )
+        if any(word in lowered for word in ("пополни", "пополнить", "добавь", "добавить")):
+            if not amount:
+                return "Сколько перевести на мини-счёт?", None
+            account = find_direct_mini_account(message)
+            label = account["label"] if account else infer_direct_label(message, "Мини-счёт")
+            action = {"action": "topup_mini_account", "label": label, "amount": amount}
+            if account:
+                action["account_id"] = account["id"]
+            return f"Подготовил пополнение «{label}» на {amount} сом.", action
+        if any(word in lowered for word in ("верни", "выведи", "сними", "забери")):
+            if not amount:
+                return "Сколько вернуть из мини-счёта?", None
+            account = find_direct_mini_account(message)
+            label = account["label"] if account else infer_direct_label(message, "Мини-счёт")
+            action = {"action": "withdraw_mini_account", "label": label, "amount": amount}
+            if account:
+                action["account_id"] = account["id"]
+            return f"Подготовил возврат из «{label}» на {amount} сом.", action
+        if any(word in lowered for word in ("закрой", "закрыть", "удали", "удалить")):
+            account = find_direct_mini_account(message)
+            label = account["label"] if account else infer_direct_label(message, "Мини-счёт")
+            action = {"action": "close_mini_account", "label": label}
+            if account:
+                action["account_id"] = account["id"]
+            return f"Подготовил закрытие мини-счёта «{label}».", action
+
+    if any(word in lowered for word in ("переведи", "отправь", "скинь", "перевести", "отправить")):
+        if not amount:
+            return "Для перевода нужна сумма.", None
+        for alias, contact in CONTACT_ALIASES.items():
+            if alias in lowered:
+                return (
+                    f"Подготовил перевод {amount} сом для {contact['name']}. Подтверди в приложении.",
+                    {"action": "transfer", "contact_id": contact["id"], "contact": contact["name"], "amount": amount, "tag": contact["tag"]},
+                )
+        return "Для перевода нужно имя контакта: например, Айгуль, Адиль или Марат.", None
+
+    if any(word in lowered for word in ("оплати", "оплатить", "заплати", "погаси")):
+        for alias, bill_id in BILL_ALIASES.items():
+            if alias in lowered:
+                bill = next((item for item in DB["bills"] if item["id"] == bill_id), None)
+                bill_amount = amount or (bill or {}).get("amount", 0)
+                return (
+                    f"Подготовил оплату счёта: {bill_amount} сом. Выполню после подтверждения.",
+                    {"action": "bill", "bill": bill_id, "amount": bill_amount},
+                )
+
+    if "цель" in lowered and any(word in lowered for word in ("создай", "создать", "открой", "добавь")):
+        if not amount:
+            return "Укажи сумму цели.", None
+        label = infer_direct_label(message, "Новая цель")
+        return (
+            f"Подготовил цель «{label}» на {amount} сом.",
+            {"action": "add_goal", "name": label, "target": amount},
+        )
+
+    if any(word in lowered for word in ("план месяца", "автоплан", "зарплатный план", "примени план")):
+        return "Подготовил план месяца. Перед применением покажу подтверждение.", {"action": "apply_plan"}
+
+    return None, None
+
+
+def build_ai_context_prompt() -> str:
+    safe = compute_safe_to_spend()
+    risk = compute_risk_radar()
+    accounts = {item["id"]: item["balance"] for item in DB["accounts"]}
+    bills_due = [bill for bill in DB["bills"] if bill["status"] in ("due", "overdue")]
+    mini_accounts = [
+        f"{account['id']}:{account['label']}={account['balance']}с"
+        for account in DB["accounts"]
+        if is_mini_account(account)
+    ]
+    goals = [f"{goal['id']}:{goal['name']} {goal['saved']}/{goal['target']}с" for goal in DB["goals"][:4]]
+    bills = [f"{bill['id']}:{bill['amount']}с" for bill in bills_due]
+    return (
+        f"You are {ASSISTANT_NAME}, an in-app financial assistant for MBANK. "
+        "Answer in Russian. Keep advice practical and short. "
+        "State-changing actions are only prepared as JSON and must be confirmed by the UI.\n"
+        f"Balances: main={accounts.get('main', 0)} KGS, savings={accounts.get('save', 0)} KGS. "
+        f"Safe-to-spend={safe['safe_to_spend']} KGS, daily={safe['daily_safe']} KGS. "
+        f"Risk score={risk['score']}/100. "
+        f"Due bills: {', '.join(bills) or 'none'}. "
+        f"Goals: {' | '.join(goals) or 'none'}. "
+        f"Mini accounts: {' | '.join(mini_accounts) or 'none'}. "
+        "Known transfer contacts: 1 Адиль, 2 Марат, 3 Айгуль, 4 Бакыт, 5 Нурия, 6 Чингиз. "
+        "For transfers prefer contact_id when clear."
+    )
+
+
 @app.route("/api/autopilot-status")
 def api_autopilot_status():
     salary_context = current_salary_context()
@@ -2209,29 +2394,41 @@ def api_chat():
         reply = safety_refusal()
         DB["chat_history"].append({"role": "assistant", "content": reply})
         return jsonify({"ok": True, "reply": reply, "action": None, "guarded": True})
+    direct_reply, direct_action = direct_chat_action(user_message)
+    if direct_action:
+        DB["chat_history"].append({"role": "assistant", "content": direct_reply or str(direct_action)})
+        _award_points(10, "Dialogue")
+        refresh_scores()
+        payload = {"ok": True, "reply": direct_reply, "action": direct_action, "local": True, "mode": "action_parser"}
+        if not GROQ_API_KEY:
+            payload["fallback_reason"] = "missing_groq_api_key"
+        return jsonify(payload)
     if not GROQ_API_KEY:
         app.logger.warning("Sezim AI fallback: GROQ_API_KEY is missing")
         return chat_fallback_payload(user_message, "missing_groq_api_key")
     messages = [
-        {"role": "system", "content": build_system_prompt()},
+        {"role": "system", "content": build_ai_context_prompt()},
         {"role": "system", "content": AI_CAPABILITIES_PROMPT},
     ]
-    for item in history[-10:]:
+    for item in history[-6:]:
         if item.get("role") in ("user", "assistant") and item.get("content"):
             messages.append({"role": item["role"], "content": str(item["content"])})
     messages.append({"role": "user", "content": user_message})
     try:
-        response = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}, json={"model": GROQ_MODEL, "messages": messages, "max_tokens": 600, "temperature": 0.7}, timeout=20)
-        if response.status_code == 401:
-            app.logger.warning("Sezim AI fallback: Groq auth failed with status 401")
-            return chat_fallback_payload(user_message, "groq_auth_failed", response.status_code)
-        if response.status_code == 400:
-            app.logger.warning("Sezim AI fallback: Groq rejected the request with status 400")
-            return chat_fallback_payload(user_message, "groq_bad_request", response.status_code)
-        if response.status_code == 429:
-            app.logger.warning("Sezim AI fallback: Groq rate limited the request with status 429")
-            return chat_fallback_payload(user_message, "groq_rate_limited", response.status_code)
-        response.raise_for_status()
+        response = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}, json={"model": GROQ_MODEL, "messages": messages, "max_tokens": 600, "temperature": 0.7}, timeout=GROQ_TIMEOUT_SECONDS)
+        error_code = None
+        error_message = None
+        if not (200 <= response.status_code < 300):
+            try:
+                error = response.json().get("error") or {}
+                error_code = error.get("code")
+                error_message = error.get("message")
+            except ValueError:
+                error_code = None
+        fallback_reason = groq_fallback_reason(response.status_code, error_code, error_message)
+        if fallback_reason:
+            app.logger.warning("Sezim AI fallback: Groq returned status %s (%s)", response.status_code, fallback_reason)
+            return chat_fallback_payload(user_message, fallback_reason, response.status_code)
         result = response.json()
         reply = result["choices"][0]["message"]["content"].strip()
         clean_reply, action_result = parse_action_from_reply(reply)
@@ -2242,6 +2439,12 @@ def api_chat():
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as error:
         app.logger.warning("Sezim AI fallback: network error while reaching Groq (%s)", error)
         return chat_fallback_payload(user_message, "groq_network_error")
+    except requests.exceptions.RequestException as error:
+        app.logger.warning("Sezim AI fallback: request error while reaching Groq (%s)", error)
+        return chat_fallback_payload(user_message, "groq_request_failed")
+    except (KeyError, IndexError, TypeError, ValueError) as error:
+        app.logger.warning("Sezim AI fallback: invalid Groq response (%s)", error)
+        return chat_fallback_payload(user_message, "groq_invalid_response")
     except Exception as error:
         app.logger.exception("Sezim AI failed with an unexpected server error")
         return jsonify({"ok": False, "error": f"Ошибка: {error}"}), 500

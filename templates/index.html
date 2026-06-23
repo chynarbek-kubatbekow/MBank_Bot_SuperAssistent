@@ -1361,6 +1361,10 @@ const AI_FALLBACK_TEXT = {
   groq_bad_request: 'Fallback · Groq не принял запрос (400)',
   groq_rate_limited: 'Fallback · лимит Groq исчерпан (429)',
   groq_network_error: 'Fallback · Render не достучался до Groq',
+  groq_model_blocked: 'Fallback · модель Groq отключена в проекте',
+  groq_provider_error: 'Fallback · временная ошибка Groq',
+  groq_request_failed: 'Fallback · запрос к Groq не прошёл',
+  groq_invalid_response: 'Fallback · Groq вернул неожиданный ответ',
 };
 
 const AI_SCREEN_LABELS = {
@@ -2720,7 +2724,8 @@ function handleAIAction(act) {
   if (!act || !act.action) return;
   if (act.action === 'transfer') {
     const lower = (act.contact||'').toLowerCase().split(' ')[0];
-    const c = state.contacts.find(x => x.name.toLowerCase().includes(lower));
+    const c = state.contacts.find(x => String(x.id) === String(act.contact_id)) ||
+      state.contacts.find(x => x.name.toLowerCase().includes(lower));
     if (!c) return addAiMsg(`Не нашёл контакт "${act.contact}". Напиши имя точнее.`);
     showAiConf(`Перевести ${money(act.amount)} -> ${c.name}?`, `Тег: <b>${act.tag||'без тега'}</b>`, async () => {
       const res = await fetchJSON('/api/transfer', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contact_id:c.id,amount:act.amount,account_id:'main',tag:act.tag})});

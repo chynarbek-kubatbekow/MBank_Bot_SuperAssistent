@@ -354,6 +354,63 @@ class MbankAppTests(unittest.TestCase):
                 self.assertIsNotNone(clean_reply)
                 self.assertEqual(action["action"], expected_action)
 
+    def test_groq_fallback_reason_maps_provider_statuses(self):
+        self.assertIsNone(mod.groq_fallback_reason(200))
+        self.assertEqual(mod.groq_fallback_reason(403), "groq_auth_failed")
+        self.assertEqual(mod.groq_fallback_reason(404), "groq_bad_request")
+        self.assertEqual(mod.groq_fallback_reason(429), "groq_rate_limited")
+        self.assertEqual(mod.groq_fallback_reason(503), "groq_provider_error")
+        self.assertEqual(mod.groq_fallback_reason(418), "groq_request_failed")
+        self.assertEqual(mod.groq_fallback_reason(403, "model_permission_blocked_project"), "groq_model_blocked")
+        self.assertEqual(mod.groq_fallback_reason(403, error_message="The model is blocked at the organization level"), "groq_model_blocked")
+
+    def test_chat_endpoint_falls_back_on_invalid_groq_response(self):
+        class BrokenGroqResponse:
+            status_code = 200
+
+            def json(self):
+                return {}
+
+        with patch.object(mod, "GROQ_API_KEY", "test-key"), patch.object(mod.requests, "post", return_value=BrokenGroqResponse()):
+            response = self.client.post("/api/chat", json={"message": "balance"})
+
+        payload = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["fallback_reason"], "groq_invalid_response")
+        self.assertTrue(payload["local"])
+
+    def test_direct_chat_action_prepares_money_actions_without_provider(self):
+        cases = [
+            ("Создай мини-счёт Обед на 1500", "create_mini_account"),
+            ("Переведи Айгуль 500 сом", "transfer"),
+            ("Оплати газ", "bill"),
+            ("Создай цель Ноутбук на 30000", "add_goal"),
+            ("Примени план месяца", "apply_plan"),
+        ]
+
+        for message, expected_action in cases:
+            with self.subTest(expected_action=expected_action):
+                reply, action = mod.direct_chat_action(message)
+                self.assertIsNotNone(reply)
+                self.assertEqual(action["action"], expected_action)
+
+    def test_chat_endpoint_uses_local_parser_for_direct_actions(self):
+        with patch.object(mod.requests, "post") as provider_call:
+            response = self.client.post("/api/chat", json={"message": "Переведи Айгуль 500 сом"})
+
+        payload = response.get_json()
+        provider_call.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["mode"], "action_parser")
+        self.assertEqual(payload["action"]["action"], "transfer")
+        self.assertEqual(payload["action"]["contact_id"], 3)
+        self.assertEqual(payload["action"]["amount"], 500)
+
+    def test_groq_context_prompt_stays_compact(self):
+        self.assertLess(len(mod.build_ai_context_prompt()), 2500)
+
     def test_transfer_analytics_question_stays_in_advice_mode(self):
         reply, action = mod.fallback_chat_response("Покажи аналитику переводов за месяц")
 
